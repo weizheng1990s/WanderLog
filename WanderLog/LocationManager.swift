@@ -1,15 +1,16 @@
+import Combine
 import CoreLocation
 import SwiftUI
 
-@Observable
-final class LocationManager: NSObject {
+final class LocationManager: NSObject, ObservableObject {
 
     static let shared = LocationManager()
 
-    var city: String = ""
-    var country: String = ""
-    var coordinate: CLLocationCoordinate2D?
-    var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    @Published var city: String = ""
+    @Published var country: String = ""
+    @Published var coordinate: CLLocationCoordinate2D?
+    @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    @Published var isLocating: Bool = false
 
     private let manager = CLLocationManager()
 
@@ -22,6 +23,9 @@ final class LocationManager: NSObject {
 
     func requestLocation() {
         print("📍 requestLocation called, status: \(manager.authorizationStatus.rawValue)")
+        city = ""
+        country = ""
+        isLocating = true
         switch manager.authorizationStatus {
         case .notDetermined:
             manager.requestWhenInUseAuthorization()
@@ -29,8 +33,9 @@ final class LocationManager: NSObject {
             manager.requestLocation()
         case .denied, .restricted:
             print("📍 Location denied")
+            isLocating = false
         @unknown default:
-            break
+            isLocating = false
         }
     }
 }
@@ -44,12 +49,14 @@ extension LocationManager: CLLocationManagerDelegate {
         CLGeocoder().reverseGeocodeLocation(location) { [weak self] placemarks, error in
             guard let self, let placemark = placemarks?.first else {
                 print("📍 Geocode error: \(error?.localizedDescription ?? "nil")")
+                DispatchQueue.main.async { self?.isLocating = false }
                 return
             }
             DispatchQueue.main.async {
                 self.city = placemark.locality ?? ""
                 self.country = placemark.country ?? ""
                 self.coordinate = location.coordinate
+                self.isLocating = false
                 print("📍 City: \(self.city), Country: \(self.country)")
             }
         }
@@ -58,6 +65,7 @@ extension LocationManager: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager,
                          didFailWithError error: Error) {
         print("📍 Location error: \(error.localizedDescription)")
+        DispatchQueue.main.async { self.isLocating = false }
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

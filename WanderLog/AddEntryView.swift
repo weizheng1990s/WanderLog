@@ -1,9 +1,8 @@
 import SwiftUI
-import SwiftData
 import PhotosUI
 
 struct AddEntryView: View {
-    @Environment(\.modelContext) private var context
+    @EnvironmentObject var store: EntryStore
     @Environment(\.dismiss) private var dismiss
 
     var editingEntry: Entry? = nil
@@ -23,9 +22,8 @@ struct AddEntryView: View {
     @State private var isSaving = false
     @State private var showError = false
     @State private var errorMessage = ""
-    @State private var isLocating = false
 
-    private let locationManager = LocationManager.shared
+    @ObservedObject private var locationManager = LocationManager.shared
 
     var isEditing: Bool { editingEntry != nil }
 
@@ -61,11 +59,11 @@ struct AddEntryView: View {
             } message: { Text(errorMessage) }
         }
         .onAppear { populateIfEditing() }
-        .onChange(of: selectedItems) { _, items in Task { await loadSelectedPhotos(items) } }
-        .onChange(of: locationManager.city) { _, val in
-            if !val.isEmpty { city = val; isLocating = false }
+        .onChange(of: selectedItems) { items in Task { await loadSelectedPhotos(items) } }
+        .onChange(of: locationManager.city) { val in
+            if !val.isEmpty { city = val }
         }
-        .onChange(of: locationManager.country) { _, val in
+        .onChange(of: locationManager.country) { val in
             if !val.isEmpty { country = val }
         }
     }
@@ -194,29 +192,28 @@ struct AddEntryView: View {
 
     private var locationButton: some View {
         Button {
-            isLocating = true
             locationManager.requestLocation()
         } label: {
             HStack(spacing: 4) {
-                if isLocating {
+                if locationManager.isLocating {
                     ProgressView().scaleEffect(0.7).tint(.wanderAccent)
                 } else {
                     Image(systemName: "location.fill")
                 }
-                Text(isLocating ? "定位中..." : "自动定位")
+                Text(locationManager.isLocating ? "定位中..." : "自动定位")
             }
             .font(.system(size: 12, weight: .medium))
             .foregroundColor(.wanderAccent)
         }
-        .disabled(isLocating)
+        .disabled(locationManager.isLocating)
     }
 
     // MARK: - Rating & Mood
 
     private var ratingMoodSection: some View {
-        HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             ratingSection
-            Spacer()
+            Divider()
             moodSection
         }
         .padding(16)
@@ -366,7 +363,7 @@ struct AddEntryView: View {
         name = entry.name; category = entry.category; note = entry.note
         mood = entry.mood; rating = entry.rating; city = entry.city
         country = entry.country; visitedAt = entry.visitedAt
-        tags = entry.tags.map { $0.name }
+        tags = entry.tags
         Task {
             let loaded = await Task.detached {
                 PhotoRepository.shared.loadAll(entry.photoFilenames)
@@ -380,39 +377,28 @@ struct AddEntryView: View {
         defer { isSaving = false }
         do {
             let newFilenames = try PhotoRepository.shared.save(selectedImages)
-            if let entry = editingEntry {
+            if var entry = editingEntry {
                 PhotoRepository.shared.delete(entry.photoFilenames)
                 entry.name = name; entry.category = category; entry.note = note
                 entry.mood = mood; entry.rating = rating; entry.city = city
                 entry.country = country; entry.visitedAt = visitedAt
-                entry.photoFilenames = newFilenames; entry.tags = resolveTags()
+                entry.photoFilenames = newFilenames; entry.tags = tags
+                store.update(entry)
             } else {
                 let entry = Entry(
                     name: name, category: category, note: note, mood: mood,
                     rating: rating, city: city, country: country,
                     latitude: locationManager.coordinate?.latitude,
                     longitude: locationManager.coordinate?.longitude,
-                    photoFilenames: newFilenames, visitedAt: visitedAt
+                    photoFilenames: newFilenames, visitedAt: visitedAt,
+                    tags: tags
                 )
-                entry.tags = resolveTags()
-                context.insert(entry)
+                store.add(entry)
             }
-            try context.save()
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
             showError = true
-        }
-    }
-
-    @MainActor
-    private func resolveTags() -> [Tag] {
-        tags.map { tagName in
-            let descriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.name == tagName })
-            if let existing = try? context.fetch(descriptor).first { return existing }
-            let newTag = Tag(name: tagName)
-            context.insert(newTag)
-            return newTag
         }
     }
 }

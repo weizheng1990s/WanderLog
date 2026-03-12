@@ -1,15 +1,19 @@
 import SwiftUI
-import SwiftData
 
 struct CollectionView: View {
-    @Query(sort: \Entry.visitedAt, order: .reverse) private var entries: [Entry]
+    @EnvironmentObject var store: EntryStore
     @State private var viewMode: ViewMode = .category
     @State private var selectedEntry: Entry? = nil
+    @State private var showDetail = false
 
     enum ViewMode: String, CaseIterable {
         case category = "品类"
         case country  = "国家"
         case favorite = "收藏"
+    }
+
+    var entries: [Entry] {
+        store.entries.sorted { $0.visitedAt > $1.visitedAt }
     }
 
     var favoriteEntries: [Entry] { entries.filter { $0.isFavorite } }
@@ -48,8 +52,10 @@ struct CollectionView: View {
                 }
                 .background(Color.wanderWarm)
             }
-            .navigationDestination(item: $selectedEntry) { entry in
-                EntryDetailView(entry: entry)
+            .navigationDestination(isPresented: $showDetail) {
+                if let entry = selectedEntry {
+                    EntryDetailView(entry: entry)
+                }
             }
         }
     }
@@ -61,6 +67,7 @@ struct CollectionView: View {
                 if !catEntries.isEmpty {
                     CategoryGroupCard(category: cat, entries: catEntries) { entry in
                         selectedEntry = entry
+                        showDetail = true
                     }
                 }
             }
@@ -72,6 +79,7 @@ struct CollectionView: View {
             ForEach(entriesByCountry.keys.sorted(), id: \.self) { country in
                 CountryGroupCard(country: country, entries: entriesByCountry[country] ?? []) { entry in
                     selectedEntry = entry
+                    showDetail = true
                 }
             }
             if entriesByCountry.isEmpty {
@@ -92,7 +100,10 @@ struct CollectionView: View {
                 ) {
                     ForEach(favoriteEntries) { entry in
                         EntryCard(entry: entry)
-                            .onTapGesture { selectedEntry = entry }
+                            .onTapGesture {
+                                selectedEntry = entry
+                                showDetail = true
+                            }
                     }
                 }
             }

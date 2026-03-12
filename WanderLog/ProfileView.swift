@@ -1,10 +1,11 @@
 import SwiftUI
-import SwiftData
 
 struct ProfileView: View {
-    @Query private var entries: [Entry]
+    @EnvironmentObject var store: EntryStore
     @State private var showExportSheet = false
     @State private var showAbout = false
+
+    var entries: [Entry] { store.entries }
 
     var uniqueCountries: [String] {
         Array(Set(entries.map { $0.country }.filter { !$0.isEmpty })).sorted()
@@ -157,7 +158,7 @@ struct ActionRow: View {
 
 struct ExportView: View {
     @Environment(\.dismiss) private var dismiss
-    @Query private var entries: [Entry]
+    @EnvironmentObject var store: EntryStore
     var body: some View {
         NavigationStack {
             VStack(spacing: 32) {
@@ -170,7 +171,7 @@ struct ExportView: View {
                         .multilineTextAlignment(.center).lineSpacing(4)
                 }
                 VStack(spacing: 10) {
-                    Text("\(entries.count) 条打卡记录").font(.system(size: 15, weight: .medium)).foregroundColor(.wanderInk)
+                    Text("\(store.entries.count) 条打卡记录").font(.system(size: 15, weight: .medium)).foregroundColor(.wanderInk)
                     Text("照片占用 \(PhotoRepository.shared.totalSizeFormatted)").font(.system(size: 13)).foregroundColor(.wanderMuted)
                 }
                 .padding(20).background(Color.wanderBlush.opacity(0.5)).clipShape(RoundedRectangle(cornerRadius: 16))

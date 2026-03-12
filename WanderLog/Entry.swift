@@ -1,9 +1,7 @@
-import SwiftData
 import Foundation
 import CoreLocation
 
-@Model
-final class Entry {
+struct Entry: Identifiable, Codable {
     var id: UUID
     var name: String
     var category: PlaceCategory
@@ -18,8 +16,7 @@ final class Entry {
     var isFavorite: Bool
     var visitedAt: Date
     var createdAt: Date
-    @Relationship(deleteRule: .nullify, inverse: \Tag.entries)
-    var tags: [Tag]
+    var tags: [String]
 
     init(
         name: String,
@@ -33,7 +30,8 @@ final class Entry {
         longitude: Double? = nil,
         photoFilenames: [String] = [],
         isFavorite: Bool = false,
-        visitedAt: Date = Date()
+        visitedAt: Date = Date(),
+        tags: [String] = []
     ) {
         self.id = UUID()
         self.name = name
@@ -49,7 +47,7 @@ final class Entry {
         self.isFavorite = isFavorite
         self.visitedAt = visitedAt
         self.createdAt = Date()
-        self.tags = []
+        self.tags = tags
     }
 
     var coordinate: CLLocationCoordinate2D? {
@@ -81,7 +79,7 @@ enum PlaceCategory: String, CaseIterable, Codable, Identifiable {
         case .gallery:    return "photo.artframe"
         case .selectShop: return "bag.fill"
         case .restaurant: return "fork.knife"
-        case .other:      return "mappin.fill"
+        case .other:      return "mappin.and.ellipse"
         }
     }
 }

@@ -1,10 +1,14 @@
 import SwiftUI
-import SwiftData
 
 struct HomeView: View {
-    @Query(sort: \Entry.visitedAt, order: .reverse) private var entries: [Entry]
+    @EnvironmentObject var store: EntryStore
     @State private var selectedCategory: PlaceCategory? = nil
     @State private var selectedEntry: Entry? = nil
+    @State private var showDetail = false
+
+    var entries: [Entry] {
+        store.entries.sorted { $0.visitedAt > $1.visitedAt }
+    }
 
     var filteredEntries: [Entry] {
         guard let cat = selectedCategory else { return entries }
@@ -48,8 +52,10 @@ struct HomeView: View {
                 }
             }
             .background(Color.wanderWarm)
-            .navigationDestination(item: $selectedEntry) { entry in
-                EntryDetailView(entry: entry)
+            .navigationDestination(isPresented: $showDetail) {
+                if let entry = selectedEntry {
+                    EntryDetailView(entry: entry)
+                }
             }
         }
     }
@@ -83,7 +89,8 @@ struct HomeView: View {
                 }
                 ForEach(PlaceCategory.allCases) { cat in
                     CategoryChip(
-                        label: "\(cat.icon) \(cat.rawValue)",
+                        icon: cat.icon,
+                        label: cat.rawValue,
                         isSelected: selectedCategory == cat
                     ) {
                         selectedCategory = selectedCategory == cat ? nil : cat
@@ -101,7 +108,10 @@ struct HomeView: View {
         ) {
             ForEach(filteredEntries) { entry in
                 EntryCard(entry: entry)
-                    .onTapGesture { selectedEntry = entry }
+                    .onTapGesture {
+                        selectedEntry = entry
+                        showDetail = true
+                    }
             }
         }
     }
@@ -143,20 +153,26 @@ struct StatPill: View {
 }
 
 struct CategoryChip: View {
+    var icon: String? = nil
     let label: String
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(label)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(isSelected ? .wanderInk : .wanderMuted)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 9)
-                .background(isSelected ? Color.wanderAccent : Color.white)
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(isSelected ? Color.clear : Color.wanderBlush, lineWidth: 1))
+            HStack(spacing: 4) {
+                if let icon {
+                    Image(systemName: icon).font(.system(size: 11))
+                }
+                Text(label)
+            }
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(isSelected ? .wanderInk : .wanderMuted)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
+            .background(isSelected ? Color.wanderAccent : Color.white)
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(isSelected ? Color.clear : Color.wanderBlush, lineWidth: 1))
         }
         .animation(.easeInOut(duration: 0.15), value: isSelected)
     }

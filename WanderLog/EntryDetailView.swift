@@ -1,16 +1,20 @@
 import SwiftUI
-import SwiftData
 import MapKit
 
 struct EntryDetailView: View {
-    @Environment(\.modelContext) private var context
+    let entry: Entry
+    @EnvironmentObject var store: EntryStore
     @Environment(\.dismiss) private var dismiss
-    @Bindable var entry: Entry
 
     @State private var photos: [UIImage] = []
     @State private var selectedPhotoIndex = 0
     @State private var showDeleteAlert = false
     @State private var showEditSheet = false
+
+    // Always read from store so edits are reflected live
+    private var liveEntry: Entry {
+        store.entries.first { $0.id == entry.id } ?? entry
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -20,10 +24,10 @@ struct EntryDetailView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     titleSection
                     Divider().foregroundColor(.wanderBlush)
-                    if !entry.note.isEmpty { noteSection }
-                    if !entry.tags.isEmpty { tagsSection }
+                    if !liveEntry.note.isEmpty { noteSection }
+                    if !liveEntry.tags.isEmpty { tagsSection }
                     infoGrid
-                    if entry.coordinate != nil { mapSnippet }
+                    if liveEntry.coordinate != nil { mapSnippet }
                     Spacer(minLength: 100)
                 }
                 .padding(24)
@@ -40,14 +44,14 @@ struct EntryDetailView: View {
         } message: {
             Text("此操作无法撤销，照片也会一并删除。")
         }
-        .sheet(isPresented: $showEditSheet) { AddEntryView(editingEntry: entry) }
+        .sheet(isPresented: $showEditSheet) { AddEntryView(editingEntry: liveEntry) }
         .task { await loadPhotos() }
     }
 
     private var photoCarousel: some View {
         ZStack {
             if photos.isEmpty {
-                LinearGradient(colors: categoryColors(for: entry.category),
+                LinearGradient(colors: categoryColors(for: liveEntry.category),
                                startPoint: .topLeading, endPoint: .bottomTrailing)
             } else {
                 TabView(selection: $selectedPhotoIndex) {
@@ -64,36 +68,43 @@ struct EntryDetailView: View {
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("\(entry.category.icon) \(entry.category.rawValue)")
-                    .font(.system(size: 11, weight: .semibold)).tracking(0.5)
-                    .foregroundColor(.wanderAccent)
-                    .padding(.horizontal, 12).padding(.vertical, 5)
-                    .background(Color.wanderBlush).clipShape(Capsule())
+                HStack(spacing: 4) {
+                    Image(systemName: liveEntry.category.icon).font(.system(size: 11))
+                    Text(liveEntry.category.rawValue)
+                }
+                .font(.system(size: 11, weight: .semibold)).tracking(0.5)
+                .foregroundColor(.wanderAccent)
+                .padding(.horizontal, 12).padding(.vertical, 5)
+                .background(Color.wanderBlush).clipShape(Capsule())
                 Spacer()
-                Button { entry.isFavorite.toggle() } label: {
-                    Image(systemName: entry.isFavorite ? "bookmark.fill" : "bookmark")
-                        .foregroundColor(entry.isFavorite ? .wanderAccent : .wanderMuted)
+                Button {
+                    var updated = liveEntry
+                    updated.isFavorite.toggle()
+                    store.update(updated)
+                } label: {
+                    Image(systemName: liveEntry.isFavorite ? "bookmark.fill" : "bookmark")
+                        .foregroundColor(liveEntry.isFavorite ? .wanderAccent : .wanderMuted)
                         .font(.system(size: 20))
                 }
             }
-            Text(entry.name).font(.wanderSerif(28)).foregroundColor(.wanderInk)
+            Text(liveEntry.name).font(.wanderSerif(28)).foregroundColor(.wanderInk)
             HStack(spacing: 16) {
-                if !entry.city.isEmpty {
-                    Label([entry.city, entry.country].filter { !$0.isEmpty }.joined(separator: ", "),
+                if !liveEntry.city.isEmpty {
+                    Label([liveEntry.city, liveEntry.country].filter { !$0.isEmpty }.joined(separator: ", "),
                           systemImage: "mappin.fill")
                         .font(.system(size: 13)).foregroundColor(.wanderMuted)
                 }
-                Label(entry.visitedAt.formatted(date: .abbreviated, time: .omitted),
+                Label(liveEntry.visitedAt.formatted(date: .abbreviated, time: .omitted),
                       systemImage: "calendar")
                     .font(.system(size: 13)).foregroundColor(.wanderMuted)
             }
             HStack(spacing: 2) {
                 ForEach(1...5, id: \.self) { star in
-                    Image(systemName: star <= entry.rating ? "star.fill" : "star")
-                        .foregroundColor(star <= entry.rating ? .wanderAccent : .wanderBlush)
+                    Image(systemName: star <= liveEntry.rating ? "star.fill" : "star")
+                        .foregroundColor(star <= liveEntry.rating ? .wanderAccent : .wanderBlush)
                         .font(.system(size: 16))
                 }
-                Text(entry.mood.icon).font(.system(size: 18)).padding(.leading, 8)
+                Image(systemName: liveEntry.mood.icon).font(.system(size: 18)).padding(.leading, 8)
             }
         }
     }
@@ -103,7 +114,7 @@ struct EntryDetailView: View {
             Label("我的笔记", systemImage: "pencil")
                 .font(.system(size: 11, weight: .semibold)).tracking(1)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
-            Text(entry.note)
+            Text(liveEntry.note)
                 .font(.system(size: 15)).foregroundColor(.wanderInk)
                 .lineSpacing(6).italic()
                 .padding(16).background(Color.white)
@@ -113,8 +124,8 @@ struct EntryDetailView: View {
 
     private var tagsSection: some View {
         FlowLayout(spacing: 6) {
-            ForEach(entry.tags) { tag in
-                Text("#\(tag.name)").font(.system(size: 12, weight: .medium))
+            ForEach(liveEntry.tags, id: \.self) { tag in
+                Text("#\(tag)").font(.system(size: 12, weight: .medium))
                     .foregroundColor(.wanderAccent)
                     .padding(.horizontal, 12).padding(.vertical, 6)
                     .background(Color.wanderBlush).clipShape(Capsule())
@@ -124,10 +135,10 @@ struct EntryDetailView: View {
 
     private var infoGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            InfoCard(label: "心情", value: "\(entry.mood.icon) \(entry.mood.label)")
-            InfoCard(label: "评分", value: "\(entry.rating) / 5 ⭐")
-            if !entry.city.isEmpty { InfoCard(label: "城市", value: entry.city) }
-            if !entry.country.isEmpty { InfoCard(label: "国家", value: entry.country) }
+            InfoCard(label: "心情", value: liveEntry.mood.label)
+            InfoCard(label: "评分", value: "\(liveEntry.rating) / 5 ⭐")
+            if !liveEntry.city.isEmpty { InfoCard(label: "城市", value: liveEntry.city) }
+            if !liveEntry.country.isEmpty { InfoCard(label: "国家", value: liveEntry.country) }
         }
     }
 
@@ -136,15 +147,19 @@ struct EntryDetailView: View {
             Label("位置", systemImage: "map.fill")
                 .font(.system(size: 11, weight: .semibold)).tracking(1)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
-            if let coord = entry.coordinate {
-                Map(initialPosition: .region(MKCoordinateRegion(
+            if let coord = liveEntry.coordinate {
+                let region = MKCoordinateRegion(
                     center: coord,
                     span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                ))) {
-                    Annotation(entry.name, coordinate: coord) {
+                )
+                Map(coordinateRegion: .constant(region),
+                    annotationItems: [liveEntry]) { e in
+                    MapAnnotation(coordinate: coord) {
                         ZStack {
                             Circle().fill(Color.wanderAccent).frame(width: 28, height: 28)
-                            Text(entry.category.icon).font(.system(size: 14))
+                            Image(systemName: liveEntry.category.icon)
+                                .font(.system(size: 12))
+                                .foregroundColor(.white)
                         }
                     }
                 }
@@ -177,13 +192,12 @@ struct EntryDetailView: View {
     }
 
     private func deleteEntry() {
-        PhotoRepository.shared.delete(entry.photoFilenames)
-        context.delete(entry)
+        store.delete(liveEntry)
         dismiss()
     }
 
     private func loadPhotos() async {
-        let filenames = entry.photoFilenames
+        let filenames = liveEntry.photoFilenames
         let loaded = await Task.detached { PhotoRepository.shared.loadAll(filenames) }.value
         photos = loaded
     }
