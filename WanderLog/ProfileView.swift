@@ -1,8 +1,10 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ProfileView: View {
     @EnvironmentObject var store: EntryStore
     @State private var showExportSheet = false
+    @State private var showImportSheet = false
     @State private var showAbout = false
 
     var entries: [Entry] { store.entries }
@@ -36,6 +38,7 @@ struct ProfileView: View {
             }
             .background(Color.wanderWarm)
             .sheet(isPresented: $showExportSheet) { ExportView() }
+            .sheet(isPresented: $showImportSheet) { ImportView() }
             .sheet(isPresented: $showAbout) { AboutView() }
         }
     }
@@ -56,7 +59,7 @@ struct ProfileView: View {
 
     private var bigStatsRow: some View {
         HStack(spacing: 12) {
-            BigStatCard(value: "\(entries.count)", label: "打卡总数", icon: "mappin.fill")
+            BigStatCard(value: "\(entries.count)", label: "打卡总数", icon: "mappin.circle.fill")
             BigStatCard(value: "\(uniqueCities.count)", label: "城市", icon: "building.2.fill")
             BigStatCard(value: "\(uniqueCountries.count)", label: "国家", icon: "globe.asia.australia.fill")
         }
@@ -121,9 +124,9 @@ struct ProfileView: View {
         VStack(spacing: 0) {
             ActionRow(icon: "square.and.arrow.up.fill", label: "导出备份") { showExportSheet = true }
             Divider().padding(.horizontal, 16)
-            ActionRow(icon: "square.and.arrow.down.fill", label: "导入备份") { showExportSheet = true }
+            ActionRow(icon: "square.and.arrow.down.fill", label: "导入备份") { showImportSheet = true }
             Divider().padding(.horizontal, 16)
-            ActionRow(icon: "info.circle.fill", label: "关于 WANDR") { showAbout = true }
+            ActionRow(icon: "info.circle.fill", label: "关于 WANDER") { showAbout = true }
         }
         .cardStyle()
     }
@@ -159,6 +162,10 @@ struct ActionRow: View {
 struct ExportView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: EntryStore
+    @State private var isExporting = false
+    @State private var exportURL: URL? = nil
+    @State private var showShareSheet = false
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 32) {
@@ -166,7 +173,7 @@ struct ExportView: View {
                 Image(systemName: "square.and.arrow.up.fill").font(.system(size: 48)).foregroundColor(.wanderAccent)
                 VStack(spacing: 8) {
                     Text("备份你的手账").font(.wanderSerif(24)).foregroundColor(.wanderInk)
-                    Text("导出 .wandr 文件，包含所有打卡记录和照片\n可通过 AirDrop 或文件 App 迁移到新设备")
+                    Text("导出 .json 文件，包含所有打卡记录\n可通过 AirDrop 或文件 App 迁移到新设备")
                         .font(.system(size: 14)).foregroundColor(.wanderMuted)
                         .multilineTextAlignment(.center).lineSpacing(4)
                 }
@@ -175,19 +182,127 @@ struct ExportView: View {
                     Text("照片占用 \(PhotoRepository.shared.totalSizeFormatted)").font(.system(size: 13)).foregroundColor(.wanderMuted)
                 }
                 .padding(20).background(Color.wanderBlush.opacity(0.5)).clipShape(RoundedRectangle(cornerRadius: 16))
-                Button {} label: {
-                    Label("导出备份", systemImage: "square.and.arrow.up")
-                        .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
-                        .frame(maxWidth: .infinity).padding(.vertical, 16)
-                        .background(Color.wanderInk).clipShape(RoundedRectangle(cornerRadius: 16))
+                Button {
+                    Task { await doExport() }
+                } label: {
+                    Group {
+                        if isExporting {
+                            ProgressView().tint(.white)
+                        } else {
+                            Label("导出备份", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
+                    .frame(maxWidth: .infinity).padding(.vertical, 16)
+                    .background(Color.wanderInk).clipShape(RoundedRectangle(cornerRadius: 16))
                 }
+                .disabled(isExporting)
                 Spacer()
             }
             .padding(24).background(Color.wanderWarm)
-            .navigationTitle("导出 / 导入").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("导出备份").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
+            .sheet(isPresented: $showShareSheet) {
+                if let url = exportURL { ShareSheet(items: [url]) }
+            }
         }
     }
+
+    private func doExport() async {
+        isExporting = true
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        encoder.dateEncodingStrategy = .iso8601
+        guard let data = try? encoder.encode(store.entries) else { isExporting = false; return }
+        let formatter = DateFormatter(); formatter.dateFormat = "yyyyMMdd"
+        let filename = "WanderLog_\(formatter.string(from: Date())).json"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        try? data.write(to: url)
+        exportURL = url
+        isExporting = false
+        showShareSheet = true
+    }
+}
+
+struct ImportView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var store: EntryStore
+    @State private var showFilePicker = false
+    @State private var isImporting = false
+    @State private var resultMessage: String? = nil
+    @State private var isSuccess = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 32) {
+                Spacer()
+                Image(systemName: "square.and.arrow.down.fill").font(.system(size: 48)).foregroundColor(.wanderAccent)
+                VStack(spacing: 8) {
+                    Text("还原你的手账").font(.wanderSerif(24)).foregroundColor(.wanderInk)
+                    Text("选择之前导出的 .json 备份文件\n已有记录不会重复导入")
+                        .font(.system(size: 14)).foregroundColor(.wanderMuted)
+                        .multilineTextAlignment(.center).lineSpacing(4)
+                }
+                if let msg = resultMessage {
+                    Text(msg).font(.system(size: 14, weight: .medium))
+                        .foregroundColor(isSuccess ? .wanderAccent : .red)
+                        .multilineTextAlignment(.center)
+                        .padding(16).background(Color.wanderBlush.opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                Button { showFilePicker = true } label: {
+                    Group {
+                        if isImporting {
+                            ProgressView().tint(.white)
+                        } else {
+                            Label("导入备份", systemImage: "square.and.arrow.down")
+                        }
+                    }
+                    .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
+                    .frame(maxWidth: .infinity).padding(.vertical, 16)
+                    .background(Color.wanderInk).clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .disabled(isImporting)
+                Spacer()
+            }
+            .padding(24).background(Color.wanderWarm)
+            .navigationTitle("导入备份").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
+            .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [.json]) { result in
+                Task { await handleImport(result) }
+            }
+        }
+    }
+
+    private func handleImport(_ result: Result<URL, Error>) async {
+        isImporting = true
+        defer { isImporting = false }
+        guard case .success(let url) = result else { return }
+        guard url.startAccessingSecurityScopedResource() else {
+            resultMessage = "无法读取文件，请重试"; isSuccess = false; return
+        }
+        defer { url.stopAccessingSecurityScopedResource() }
+        guard let data = try? Data(contentsOf: url) else {
+            resultMessage = "文件读取失败"; isSuccess = false; return
+        }
+        let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
+        guard let entries = try? decoder.decode([Entry].self, from: data) else {
+            resultMessage = "格式不正确，请选择 WanderLog 导出的备份文件"; isSuccess = false; return
+        }
+        let existingIDs = Set(store.entries.map { $0.id })
+        let newEntries = entries.filter { !existingIDs.contains($0.id) }
+        for entry in newEntries { store.add(entry) }
+        resultMessage = newEntries.isEmpty ? "没有新记录可导入" : "成功导入 \(newEntries.count) 条记录"
+        isSuccess = true
+    }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    func updateUIViewController(_ uvc: UIActivityViewController, context: Context) {}
 }
 
 struct AboutView: View {
@@ -197,8 +312,10 @@ struct AboutView: View {
             VStack(spacing: 24) {
                 Spacer()
                 Text("✦").font(.system(size: 48)).foregroundColor(.wanderAccent)
-                Text("WANDR").font(.wanderSerif(32)).foregroundColor(.wanderInk)
+                Text("WANDER").font(.wanderSerif(32)).foregroundColor(.wanderInk)
                 Text("全球探店电子手账").font(.system(size: 16)).foregroundColor(.wanderMuted)
+                Text("版本 \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
+                    .font(.system(size: 12)).foregroundColor(.wanderMuted)
                 Divider().padding(.horizontal, 40)
                 VStack(spacing: 10) {
                     AboutRow(icon: "lock.shield.fill", text: "所有数据仅保存在你的设备")

@@ -1,5 +1,7 @@
 import SwiftUI
 import PhotosUI
+import CoreLocation
+import MapKit
 
 struct AddEntryView: View {
     @EnvironmentObject var store: EntryStore
@@ -19,6 +21,9 @@ struct AddEntryView: View {
     @State private var tags: [String] = []
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var selectedImages: [UIImage] = []
+    @State private var addressInput: String = ""
+    @State private var isGeocoding = false
+    @State private var resolvedCoordinate: CLLocationCoordinate2D? = nil
     @State private var isSaving = false
     @State private var showError = false
     @State private var errorMessage = ""
@@ -33,7 +38,6 @@ struct AddEntryView: View {
                 VStack(spacing: 24) {
                     photoSection
                     categorySection
-                    basicInfoSection
                     locationSection
                     ratingMoodSection
                     noteSection
@@ -61,7 +65,10 @@ struct AddEntryView: View {
         .onAppear { populateIfEditing() }
         .onChange(of: selectedItems) { items in Task { await loadSelectedPhotos(items) } }
         .onChange(of: locationManager.city) { val in
-            if !val.isEmpty { city = val }
+            if !val.isEmpty {
+                city = val
+                resolvedCoordinate = locationManager.coordinate
+            }
         }
         .onChange(of: locationManager.country) { val in
             if !val.isEmpty { country = val }
@@ -163,28 +170,58 @@ struct AddEntryView: View {
         }
     }
 
-    // MARK: - Basic Info
-
-    private var basicInfoSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionLabel("名称")
-            TextField("店名或地点", text: $name).textFieldStyle(WanderTextFieldStyle())
-        }
-    }
-
-    // MARK: - Location
+    // MARK: - Location + Basic Info
 
     private var locationSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
+        VStack(spacing: 12) {
+            // 位置 label + 地址输入 + 搜索按钮
+            VStack(alignment: .leading, spacing: 8) {
                 sectionLabel("位置")
-                Spacer()
-                locationButton
+                HStack(spacing: 8) {
+                    TextField("粘贴 Google 地址", text: $addressInput)
+                        .textFieldStyle(WanderTextFieldStyle())
+                        .onSubmit { geocodeAddress() }
+                    Button { geocodeAddress() } label: {
+                        Group {
+                            if isGeocoding {
+                                ProgressView().scaleEffect(0.7).tint(.wanderAccent)
+                            } else {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 15, weight: .medium))
+                            }
+                        }
+                        .foregroundColor(.wanderAccent)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.wanderBlush, lineWidth: 1))
+                    }
+                    .disabled(isGeocoding || addressInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
             }
-            HStack(spacing: 10) {
+
+            // 城市 + 国家 + 自动定位
+            HStack(spacing: 8) {
                 TextField("城市", text: $city).textFieldStyle(WanderTextFieldStyle())
                 TextField("国家", text: $country).textFieldStyle(WanderTextFieldStyle())
+                locationButton
             }
+
+            // 名称 label + 店名输入
+            VStack(alignment: .leading, spacing: 8) {
+                sectionLabel("名称")
+                TextField("店名", text: $name).textFieldStyle(WanderTextFieldStyle())
+            }
+
+            if resolvedCoordinate != nil {
+                HStack(spacing: 4) {
+                    Image(systemName: "location.fill").font(.system(size: 10))
+                    Text("已获取坐标，将显示在地图上").font(.system(size: 11))
+                }
+                .foregroundColor(.wanderAccent)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             DatePicker("探访日期", selection: $visitedAt, displayedComponents: .date)
                 .font(.system(size: 14)).tint(.wanderAccent)
         }
@@ -343,6 +380,36 @@ struct AddEntryView: View {
             .textCase(.uppercase)
     }
 
+    private func geocodeAddress() {
+        let query = addressInput.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return }
+        isGeocoding = true
+
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = query
+        MKLocalSearch(request: request).start { response, _ in
+            if let item = response?.mapItems.first {
+                DispatchQueue.main.async {
+                    self.isGeocoding = false
+                    if let locality = item.placemark.locality, !locality.isEmpty { self.city = locality }
+                    if let countryName = item.placemark.country, !countryName.isEmpty { self.country = countryName }
+                    self.resolvedCoordinate = item.placemark.coordinate
+                }
+                return
+            }
+            // 搜索无结果，回退到纯地址解析
+            CLGeocoder().geocodeAddressString(query) { placemarks, _ in
+                DispatchQueue.main.async {
+                    self.isGeocoding = false
+                    guard let placemark = placemarks?.first else { return }
+                    if let locality = placemark.locality, !locality.isEmpty { self.city = locality }
+                    if let countryName = placemark.country, !countryName.isEmpty { self.country = countryName }
+                    self.resolvedCoordinate = placemark.location?.coordinate
+                }
+            }
+        }
+    }
+
     private func addTag() {
         let trimmed = tagInput.trimmingCharacters(in: .whitespaces)
         if !trimmed.isEmpty && !tags.contains(trimmed) { tags.append(trimmed) }
@@ -364,6 +431,9 @@ struct AddEntryView: View {
         mood = entry.mood; rating = entry.rating; city = entry.city
         country = entry.country; visitedAt = entry.visitedAt
         tags = entry.tags
+        if let lat = entry.latitude, let lng = entry.longitude {
+            resolvedCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
+        }
         Task {
             let loaded = await Task.detached {
                 PhotoRepository.shared.loadAll(entry.photoFilenames)
@@ -388,8 +458,8 @@ struct AddEntryView: View {
                 let entry = Entry(
                     name: name, category: category, note: note, mood: mood,
                     rating: rating, city: city, country: country,
-                    latitude: locationManager.coordinate?.latitude,
-                    longitude: locationManager.coordinate?.longitude,
+                    latitude: resolvedCoordinate?.latitude,
+                    longitude: resolvedCoordinate?.longitude,
                     photoFilenames: newFilenames, visitedAt: visitedAt,
                     tags: tags
                 )

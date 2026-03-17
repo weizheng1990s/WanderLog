@@ -129,7 +129,7 @@ struct CategoryGroupCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { isExpanded.toggle() }
             } label: {
                 HStack {
                     HStack(spacing: 10) {
@@ -180,7 +180,7 @@ struct CountryGroupCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.spring(duration: 0.3)) { isExpanded.toggle() }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { isExpanded.toggle() }
             } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {

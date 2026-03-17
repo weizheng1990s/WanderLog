@@ -106,6 +106,6 @@ struct EntryMapPin: View {
                 .frame(width: 6, height: 6).shadow(color: .black.opacity(0.15), radius: 1)
         }
         .scaleEffect(isSelected ? 1.1 : 1.0)
-        .animation(.spring(duration: 0.2), value: isSelected)
+        .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isSelected)
     }
 }

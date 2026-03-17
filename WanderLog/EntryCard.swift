@@ -38,7 +38,7 @@ struct EntryCard: View {
 
                 if !entry.city.isEmpty {
                     HStack(spacing: 3) {
-                        Image(systemName: "mappin.fill").font(.system(size: 9))
+                        Image(systemName: "mappin.circle.fill").font(.system(size: 9))
                         Text([entry.city, entry.country].filter { !$0.isEmpty }.joined(separator: ", "))
                             .font(.system(size: 11)).lineLimit(1)
                     }

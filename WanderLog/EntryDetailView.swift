@@ -91,7 +91,7 @@ struct EntryDetailView: View {
             HStack(spacing: 16) {
                 if !liveEntry.city.isEmpty {
                     Label([liveEntry.city, liveEntry.country].filter { !$0.isEmpty }.joined(separator: ", "),
-                          systemImage: "mappin.fill")
+                          systemImage: "mappin.circle.fill")
                         .font(.system(size: 13)).foregroundColor(.wanderMuted)
                 }
                 Label(liveEntry.visitedAt.formatted(date: .abbreviated, time: .omitted),
