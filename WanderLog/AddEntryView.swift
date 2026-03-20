@@ -178,7 +178,7 @@ struct AddEntryView: View {
             VStack(alignment: .leading, spacing: 8) {
                 sectionLabel("位置")
                 HStack(spacing: 8) {
-                    TextField("粘贴 Google 地址", text: $addressInput)
+                    TextField("输入城市名称/粘贴Google地址", text: $addressInput)
                         .textFieldStyle(WanderTextFieldStyle())
                         .onSubmit { geocodeAddress() }
                     Button { geocodeAddress() } label: {
