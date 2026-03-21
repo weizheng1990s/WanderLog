@@ -118,7 +118,7 @@ struct Strings {
     var privacyNote: String    { pick("所有数据仅保存在本设备，不上传任何服务器", "All data is stored on this device only", "すべてのデータはデバイスにのみ保存されます", "모든 데이터는 이 기기에만 저장됩니다", "所有數據僅保存在本設備，不上傳任何伺服器") }
     var exportBackup: String   { pick("导出备份",   "Export Backup",  "バックアップを書き出す", "백업 내보내기", "匯出備份") }
     var importBackup: String   { pick("导入备份",   "Import Backup",  "バックアップを読み込む", "백업 가져오기", "匯入備份") }
-    var aboutWander: String    { pick("关于 WANDER", "About WANDER", "WANDERについて",   "WANDER 정보",   "關於 WANDER") }
+    var aboutWander: String    { pick("关于 Kiro Book", "About Kiro Book", "Kiro Bookについて", "Kiro Book 정보", "關於 Kiro Book") }
 
     // MARK: Export
     var exportTitle: String    { pick("备份你的手账", "Backup Your Journal", "手帳をバックアップ", "여행 노트 백업", "備份你的手帳") }

@@ -14,8 +14,6 @@ struct ProfileView: View {
     @AppStorage("profile_tagline") private var profileTagline: String = ""
     @State private var isEditingName = false
     @State private var isEditingTagline = false
-    @State private var editingNameText = ""
-    @State private var editingTaglineText = ""
 
     var entries: [Entry] { store.entries }
 
@@ -97,47 +95,37 @@ struct ProfileView: View {
             // Editable name
             Group {
                 if isEditingName {
-                    TextField("", text: $editingNameText)
+                    TextField("", text: $profileName)
                         .font(.wanderSerif(24))
                         .foregroundColor(.wanderInk)
                         .multilineTextAlignment(.center)
-                        .onSubmit { profileName = editingNameText; isEditingName = false }
+                        .onSubmit { isEditingName = false }
                 } else {
                     Text(profileName.isEmpty ? lang.s.profileTitle : profileName)
                         .font(.wanderSerif(24))
                         .foregroundColor(.wanderInk)
-                        .onTapGesture {
-                            editingNameText = profileName.isEmpty ? lang.s.profileTitle : profileName
-                            isEditingName = true
-                        }
+                        .onTapGesture { isEditingName = true }
                 }
             }
 
             // Editable tagline
             Group {
                 if isEditingTagline {
-                    TextField("", text: $editingTaglineText)
+                    TextField("", text: $profileTagline)
                         .font(.system(size: 13))
                         .foregroundColor(.wanderMuted)
                         .multilineTextAlignment(.center)
-                        .onSubmit { profileTagline = editingTaglineText; isEditingTagline = false }
+                        .onSubmit { isEditingTagline = false }
                 } else {
                     Text(profileTagline.isEmpty ? lang.s.profileTagline : profileTagline)
                         .font(.system(size: 13))
                         .foregroundColor(.wanderMuted)
-                        .onTapGesture {
-                            editingTaglineText = profileTagline.isEmpty ? lang.s.profileTagline : profileTagline
-                            isEditingTagline = true
-                        }
+                        .onTapGesture { isEditingTagline = true }
                 }
             }
         }
         .frame(maxWidth: .infinity)
         .onAppear { avatarImage = loadAvatar() }
-        .onTapGesture {
-            if isEditingName { profileName = editingNameText; isEditingName = false }
-            if isEditingTagline { profileTagline = editingTaglineText; isEditingTagline = false }
-        }
     }
 
     private func avatarURL() -> URL {
@@ -414,7 +402,7 @@ struct AboutView: View {
             VStack(spacing: 24) {
                 Spacer()
                 Text("✦").font(.system(size: 48)).foregroundColor(.wanderAccent)
-                Text("WANDER").font(.wanderSerif(32)).foregroundColor(.wanderInk)
+                Text("Kiro Book").font(.wanderSerif(32)).foregroundColor(.wanderInk)
                 Text(lang.s.appSubtitle).font(.system(size: 16)).foregroundColor(.wanderMuted)
                 Text(lang.s.version(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"))
                     .font(.system(size: 12)).foregroundColor(.wanderMuted)

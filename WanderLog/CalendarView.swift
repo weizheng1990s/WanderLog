@@ -1,5 +1,12 @@
 import SwiftUI
 
+// MARK: - Day Sheet Item (avoids isPresented race condition)
+
+struct DaySheetItem: Identifiable {
+    let id = UUID()
+    let entries: [Entry]
+}
+
 // MARK: - Wander Calendar
 
 struct WanderCalendar: View {
@@ -8,8 +15,7 @@ struct WanderCalendar: View {
     @EnvironmentObject private var store: EntryStore
     @EnvironmentObject private var lang: LanguageManager
     @State private var displayMonth: Date = Calendar.current.wanderMonthStart(Date())
-    @State private var selectedDayEntries: [Entry] = []
-    @State private var showDaySheet = false
+    @State private var daySheetItem: DaySheetItem? = nil
 
     private let cal = Calendar.current
 
@@ -49,8 +55,10 @@ struct WanderCalendar: View {
                     else if v.translation.width > 50 { changeMonth(by: -1) }
                 }
         )
-        .fullScreenCover(isPresented: $showDaySheet) {
-            DayEntriesSheet(entries: selectedDayEntries)
+        .fullScreenCover(item: $daySheetItem) { item in
+            DayEntriesSheet(entries: item.entries)
+                .environmentObject(store)
+                .environmentObject(lang)
         }
     }
 
@@ -105,7 +113,7 @@ struct WanderCalendar: View {
             columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7),
             spacing: 2
         ) {
-            ForEach(0..<firstWeekday, id: \.self) { _ in
+            ForEach(Array(0..<firstWeekday).map { -($0 + 1) }, id: \.self) { _ in
                 Color.clear.frame(height: 64)
             }
             ForEach(1...max(daysInMonth, 1), id: \.self) { day in
@@ -116,8 +124,7 @@ struct WanderCalendar: View {
                     isToday: isToday(day)
                 ) {
                     if !dayEntries.isEmpty {
-                        selectedDayEntries = Array(dayEntries)
-                        showDaySheet = true
+                        daySheetItem = DaySheetItem(entries: Array(dayEntries))
                     }
                 }
             }
@@ -209,36 +216,47 @@ struct DayEntriesSheet: View {
     @EnvironmentObject var store: EntryStore
     @EnvironmentObject var lang: LanguageManager
     let entries: [Entry]
+    @State private var currentIndex: Int = 0
+    @State private var navigateToDetail = false
+    @State private var selectedEntry: Entry? = nil
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Date header
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(dateString)
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(.wanderInk)
-                        Text(weekdayString)
-                            .font(.system(size: 14))
-                            .foregroundColor(.wanderMuted)
-                    }
-                    .padding(.top, 8)
-
-                    // Cards list
-                    ForEach(entries) { entry in
-                        NavigationLink {
-                            EntryDetailView(entry: entry)
-                        } label: {
-                            DayEntryCard(entry: entry)
+            TabView(selection: $currentIndex) {
+                ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
+                    VStack(spacing: 12) {
+                        // Centered date header
+                        VStack(spacing: 4) {
+                            Text(dateString)
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(.wanderInk)
+                            Text(weekdayString)
+                                .font(.system(size: 13))
+                                .foregroundColor(.wanderMuted)
                         }
-                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
+
+                        DayEntryCard(entry: entry)
+                            .padding(.horizontal, 24)
+                            .onTapGesture {
+                                selectedEntry = entry
+                                navigateToDetail = true
+                            }
+
+                        Spacer(minLength: 0)
                     }
+                    .padding(.top, 12)
+                    .tag(idx)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 40)
             }
+            .tabViewStyle(.page(indexDisplayMode: entries.count > 1 ? .always : .never))
+            .indexViewStyle(.page(backgroundDisplayMode: .never))
             .background(Color.wanderWarm.ignoresSafeArea())
+            .navigationDestination(isPresented: $navigateToDetail) {
+                if let entry = selectedEntry {
+                    EntryDetailView(entry: entry)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(lang.s.close) { dismiss() }
@@ -269,48 +287,42 @@ struct DayEntryCard: View {
     @EnvironmentObject var lang: LanguageManager
     @State private var photo: UIImage? = nil
 
-    private var subtitleText: String {
-        let cat = store.categoryDisplayName(for: entry, lang: lang.language)
-        if entry.city.isEmpty {
-            return "(\(cat))"
-        } else {
-            return "(\(cat) in \(entry.city))"
-        }
-    }
-
     var body: some View {
-        VStack(spacing: 0) {
-            // Photo
-            Group {
-                if let img = photo {
-                    Image(uiImage: img)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    LinearGradient(
-                        colors: [Color(hex: "3A2A1A"), Color(hex: "8B6040")],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 220)
-            .clipped()
+        GeometryReader { geo in
+            let cardWidth = geo.size.width
+            let photoHeight = cardWidth * 4 / 3
 
-            // Info
-            VStack(spacing: 6) {
+            VStack(spacing: 0) {
+                // Photo 3:4
+                Group {
+                    if let img = photo {
+                        Image(uiImage: img)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        LinearGradient(
+                            colors: [Color(hex: "3A2A1A"), Color(hex: "8B6040")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    }
+                }
+                .frame(width: cardWidth, height: photoHeight)
+                .clipped()
+
+                // Store name centered
                 Text(entry.name)
                     .font(.custom("Georgia-Italic", size: 22))
                     .foregroundColor(.wanderInk)
                     .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+                    .background(Color(hex: "F2EDE4"))
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 28)
-            .background(Color(hex: "F2EDE4"))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 6)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 6)
+        .aspectRatio(3.0 / (4.0 + 0.22), contentMode: .fit)
         .task {
             if let filename = entry.firstPhotoFilename {
                 photo = await Task.detached {
