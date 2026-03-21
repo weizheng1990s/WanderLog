@@ -3,26 +3,48 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 56;
 	objects = {
+
+/* Begin PBXBuildFile section */
+		BB000001BB000001BB000001 /* WanderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001AA000001AA000001 /* WanderApp.swift */; };
+		BB000002BB000002BB000002 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA000002AA000002 /* RootView.swift */; };
+		BB000003BB000003BB000003 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000003AA000003AA000003 /* DesignSystem.swift */; };
+		BB000004BB000004BB000004 /* PhotoRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000004AA000004AA000004 /* PhotoRepository.swift */; };
+		BB000005BB000005BB000005 /* Entry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000005AA000005AA000005 /* Entry.swift */; };
+		BB000006BB000006BB000006 /* EntryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000006AA000006AA000006 /* EntryStore.swift */; };
+		BB000007BB000007BB000007 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000007AA000007AA000007 /* HomeView.swift */; };
+		BB000008BB000008BB000008 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000008AA000008AA000008 /* LocationManager.swift */; };
+		BB000009BB000009BB000009 /* Tag.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000009AA000009AA000009 /* Tag.swift */; };
+		BB00000ABB00000ABB00000A /* CollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000AAA00000AAA00000A /* CollectionView.swift */; };
+		BB00000BBB00000BBB00000B /* MapTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000BAA00000BAA00000B /* MapTabView.swift */; };
+		BB00000CBB00000CBB00000C /* EntryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000CAA00000CAA00000C /* EntryCard.swift */; };
+		BB00000DBB00000DBB00000D /* EntryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000DAA00000DAA00000D /* EntryDetailView.swift */; };
+		BB00000EBB00000EBB00000E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000EAA00000EAA00000E /* ProfileView.swift */; };
+		BB00000FBB00000FBB00000F /* AddEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000FAA00000FAA00000F /* AddEntryView.swift */; };
+		BB000010BB000010BB000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000010AA000010AA000010 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		41B7F8162F5C404E00AB0757 /* WanderLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WanderLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA000001AA000001AA000001 /* WanderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WanderApp.swift; sourceTree = "<group>"; };
+		AA000002AA000002AA000002 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		AA000003AA000003AA000003 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		AA000004AA000004AA000004 /* PhotoRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoRepository.swift; sourceTree = "<group>"; };
+		AA000005AA000005AA000005 /* Entry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Entry.swift; sourceTree = "<group>"; };
+		AA000006AA000006AA000006 /* EntryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryStore.swift; sourceTree = "<group>"; };
+		AA000007AA000007AA000007 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		AA000008AA000008AA000008 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
+		AA000009AA000009AA000009 /* Tag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tag.swift; sourceTree = "<group>"; };
+		AA00000AAA00000AAA00000A /* CollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionView.swift; sourceTree = "<group>"; };
+		AA00000BAA00000BAA00000B /* MapTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTabView.swift; sourceTree = "<group>"; };
+		AA00000CAA00000CAA00000C /* EntryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryCard.swift; sourceTree = "<group>"; };
+		AA00000DAA00000DAA00000D /* EntryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntryDetailView.swift; sourceTree = "<group>"; };
+		AA00000EAA00000EAA00000E /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		AA00000FAA00000FAA00000F /* AddEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEntryView.swift; sourceTree = "<group>"; };
+		AA000010AA000010AA000010 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA000011AA000011AA000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		416415422F603699000A3954 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 41B7F8152F5C404E00AB0757 /* WanderLog */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		41B7F8182F5C404E00AB0757 /* WanderLog */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (416415422F603699000A3954 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = WanderLog; sourceTree = "<group>"; };
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		41B7F8132F5C404E00AB0757 /* Frameworks */ = {
@@ -38,7 +60,7 @@
 		41B7F80D2F5C404E00AB0757 = {
 			isa = PBXGroup;
 			children = (
-				41B7F8182F5C404E00AB0757 /* WanderLog */,
+				CC000001CC000001CC000001 /* WanderLog */,
 				41B7F8172F5C404E00AB0757 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -49,6 +71,30 @@
 				41B7F8162F5C404E00AB0757 /* WanderLog.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		CC000001CC000001CC000001 /* WanderLog */ = {
+			isa = PBXGroup;
+			children = (
+				AA000001AA000001AA000001 /* WanderApp.swift */,
+				AA000002AA000002AA000002 /* RootView.swift */,
+				AA000003AA000003AA000003 /* DesignSystem.swift */,
+				AA000004AA000004AA000004 /* PhotoRepository.swift */,
+				AA000005AA000005AA000005 /* Entry.swift */,
+				AA000006AA000006AA000006 /* EntryStore.swift */,
+				AA000007AA000007AA000007 /* HomeView.swift */,
+				AA000008AA000008AA000008 /* LocationManager.swift */,
+				AA000009AA000009AA000009 /* Tag.swift */,
+				AA00000AAA00000AAA00000A /* CollectionView.swift */,
+				AA00000BAA00000BAA00000B /* MapTabView.swift */,
+				AA00000CAA00000CAA00000C /* EntryCard.swift */,
+				AA00000DAA00000DAA00000D /* EntryDetailView.swift */,
+				AA00000EAA00000EAA00000E /* ProfileView.swift */,
+				AA00000FAA00000FAA00000F /* AddEntryView.swift */,
+				AA000010AA000010AA000010 /* Assets.xcassets */,
+				AA000011AA000011AA000011 /* Info.plist */,
+			);
+			path = WanderLog;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -66,9 +112,6 @@
 			);
 			dependencies = (
 			);
-			fileSystemSynchronizedGroups = (
-				41B7F8182F5C404E00AB0757 /* WanderLog */,
-			);
 			name = WanderLog;
 			packageProductDependencies = (
 			);
@@ -83,11 +126,11 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2630;
-				LastUpgradeCheck = 2630;
+				LastSwiftUpdateCheck = 1420;
+				LastUpgradeCheck = 1420;
 				TargetAttributes = {
 					41B7F8152F5C404E00AB0757 = {
-						CreatedOnToolsVersion = 26.3;
+						CreatedOnToolsVersion = 14.2;
 					};
 				};
 			};
@@ -100,7 +143,6 @@
 				Base,
 			);
 			mainGroup = 41B7F80D2F5C404E00AB0757;
-			minimizedProjectReferenceProxies = 1;
 			productRefGroup = 41B7F8172F5C404E00AB0757 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -115,6 +157,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB000010BB000010BB000010 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +168,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BB000001BB000001BB000001 /* WanderApp.swift in Sources */,
+				BB000002BB000002BB000002 /* RootView.swift in Sources */,
+				BB000003BB000003BB000003 /* DesignSystem.swift in Sources */,
+				BB000004BB000004BB000004 /* PhotoRepository.swift in Sources */,
+				BB000005BB000005BB000005 /* Entry.swift in Sources */,
+				BB000006BB000006BB000006 /* EntryStore.swift in Sources */,
+				BB000007BB000007BB000007 /* HomeView.swift in Sources */,
+				BB000008BB000008BB000008 /* LocationManager.swift in Sources */,
+				BB000009BB000009BB000009 /* Tag.swift in Sources */,
+				BB00000ABB00000ABB00000A /* CollectionView.swift in Sources */,
+				BB00000BBB00000BBB00000B /* MapTabView.swift in Sources */,
+				BB00000CBB00000CBB00000C /* EntryCard.swift in Sources */,
+				BB00000DBB00000DBB00000D /* EntryDetailView.swift in Sources */,
+				BB00000EBB00000EBB00000E /* ProfileView.swift in Sources */,
+				BB00000FBB00000FBB00000F /* AddEntryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -135,7 +193,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -169,7 +226,6 @@
 				DEVELOPMENT_TEAM = 5CU6L75C9G;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -184,13 +240,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -199,7 +254,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -233,7 +287,6 @@
 				DEVELOPMENT_TEAM = 5CU6L75C9G;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -242,8 +295,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -272,7 +324,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -280,15 +332,10 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.minami-studio.kiro";
 				PRODUCT_NAME = "Kiro Book";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -314,7 +361,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -322,15 +369,10 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.minami-studio.kiro";
 				PRODUCT_NAME = "Kiro Book";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
