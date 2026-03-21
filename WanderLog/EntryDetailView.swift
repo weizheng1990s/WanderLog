@@ -4,6 +4,7 @@ import MapKit
 struct EntryDetailView: View {
     let entry: Entry
     @EnvironmentObject var store: EntryStore
+    @EnvironmentObject var lang: LanguageManager
     @Environment(\.dismiss) private var dismiss
 
     @State private var photos: [UIImage] = []
@@ -38,11 +39,11 @@ struct EntryDetailView: View {
         .navigationBarHidden(true)
         .overlay(alignment: .topLeading) { backButton }
         .overlay(alignment: .topTrailing) { menuButton }
-        .alert("删除这条打卡？", isPresented: $showDeleteAlert) {
-            Button("删除", role: .destructive) { deleteEntry() }
-            Button("取消", role: .cancel) {}
+        .alert(lang.s.deleteEntryTitle, isPresented: $showDeleteAlert) {
+            Button(lang.s.delete, role: .destructive) { deleteEntry() }
+            Button(lang.s.cancel, role: .cancel) {}
         } message: {
-            Text("此操作无法撤销，照片也会一并删除。")
+            Text(lang.s.deleteEntryMessage)
         }
         .sheet(isPresented: $showEditSheet) { AddEntryView(editingEntry: liveEntry) }
         .task { await loadPhotos() }
@@ -69,8 +70,8 @@ struct EntryDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 HStack(spacing: 4) {
-                    Image(systemName: liveEntry.category.icon).font(.system(size: 11))
-                    Text(liveEntry.category.rawValue)
+                    Image(systemName: store.categoryIcon(for: liveEntry)).font(.system(size: 11))
+                    Text(store.categoryDisplayName(for: liveEntry, lang: lang.language))
                 }
                 .font(.system(size: 11, weight: .semibold)).tracking(0.5)
                 .foregroundColor(.wanderAccent)
@@ -111,7 +112,7 @@ struct EntryDetailView: View {
 
     private var noteSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("我的笔记", systemImage: "pencil")
+            Label(lang.s.myNotesLabel, systemImage: "pencil")
                 .font(.system(size: 11, weight: .semibold)).tracking(1)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
             Text(liveEntry.note)
@@ -135,16 +136,16 @@ struct EntryDetailView: View {
 
     private var infoGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            InfoCard(label: "心情", value: liveEntry.mood.label)
-            InfoCard(label: "评分", value: "\(liveEntry.rating) / 5 ⭐")
-            if !liveEntry.city.isEmpty { InfoCard(label: "城市", value: liveEntry.city) }
-            if !liveEntry.country.isEmpty { InfoCard(label: "国家", value: liveEntry.country) }
+            InfoCard(label: lang.s.mood, value: liveEntry.mood.localizedLabel(lang: lang.language))
+            InfoCard(label: lang.s.rating, value: "\(liveEntry.rating) / 5 ⭐")
+            if !liveEntry.city.isEmpty { InfoCard(label: lang.s.city, value: liveEntry.city) }
+            if !liveEntry.country.isEmpty { InfoCard(label: lang.s.country, value: liveEntry.country) }
         }
     }
 
     private var mapSnippet: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("位置", systemImage: "map.fill")
+            Label(lang.s.location, systemImage: "map.fill")
                 .font(.system(size: 11, weight: .semibold)).tracking(1)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
             if let coord = liveEntry.coordinate {
@@ -157,7 +158,7 @@ struct EntryDetailView: View {
                     MapAnnotation(coordinate: coord) {
                         ZStack {
                             Circle().fill(Color.wanderAccent).frame(width: 28, height: 28)
-                            Image(systemName: liveEntry.category.icon)
+                            Image(systemName: store.categoryIcon(for: liveEntry))
                                 .font(.system(size: 12))
                                 .foregroundColor(.white)
                         }
@@ -181,8 +182,8 @@ struct EntryDetailView: View {
 
     private var menuButton: some View {
         Menu {
-            Button { showEditSheet = true } label: { Label("编辑", systemImage: "pencil") }
-            Button(role: .destructive) { showDeleteAlert = true } label: { Label("删除", systemImage: "trash") }
+            Button { showEditSheet = true } label: { Label(lang.s.edit, systemImage: "pencil") }
+            Button(role: .destructive) { showDeleteAlert = true } label: { Label(lang.s.delete, systemImage: "trash") }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)

@@ -3,22 +3,29 @@ import PhotosUI
 import CoreLocation
 import MapKit
 
+enum CategorySelection: Equatable {
+    case standard(PlaceCategory)
+    case custom(UUID)
+}
+
 struct AddEntryView: View {
     @EnvironmentObject var store: EntryStore
+    @EnvironmentObject var lang: LanguageManager
     @Environment(\.dismiss) private var dismiss
 
     var editingEntry: Entry? = nil
 
     @State private var name: String = ""
-    @State private var category: PlaceCategory = .cafe
+    @State private var categorySelection: CategorySelection = .standard(.cafe)
+    @State private var showAddCategory = false
+    @State private var showEditCategory = false
+    @State private var newCategoryName = ""
+    @State private var editingCustomCategory: CustomCategory? = nil
     @State private var note: String = ""
-    @State private var mood: Mood = .relaxed
     @State private var rating: Int = 4
     @State private var city: String = ""
     @State private var country: String = ""
     @State private var visitedAt: Date = Date()
-    @State private var tagInput: String = ""
-    @State private var tags: [String] = []
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var selectedImages: [UIImage] = []
     @State private var addressInput: String = ""
@@ -39,27 +46,26 @@ struct AddEntryView: View {
                     photoSection
                     categorySection
                     locationSection
-                    ratingMoodSection
+                    ratingSection
                     noteSection
-                    tagsSection
                     Spacer(minLength: 40)
                 }
                 .padding(20)
             }
             .background(Color.wanderWarm)
-            .navigationTitle(isEditing ? "编辑打卡" : "新建打卡")
+            .navigationTitle(isEditing ? lang.s.editEntry : lang.s.newEntry)
             .navigationBarTitleDisplayMode(.inline)
             .ignoresSafeArea(.keyboard, edges: .bottom)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }.foregroundColor(.wanderMuted)
+                    Button(lang.s.cancel) { dismiss() }.foregroundColor(.wanderMuted)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     saveButton
                 }
             }
-            .alert("保存失败", isPresented: $showError) {
-                Button("好") {}
+            .alert(lang.s.saveFailed, isPresented: $showError) {
+                Button(lang.s.ok) {}
             } message: { Text(errorMessage) }
         }
         .onAppear { populateIfEditing() }
@@ -82,7 +88,7 @@ struct AddEntryView: View {
             if isSaving {
                 ProgressView().tint(.wanderInk)
             } else {
-                Text("保存")
+                Text(lang.s.save)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
@@ -98,7 +104,7 @@ struct AddEntryView: View {
 
     private var photoSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionLabel("照片")
+            sectionLabel(lang.s.photos)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(Array(selectedImages.enumerated()), id: \.offset) { idx, img in
@@ -123,7 +129,7 @@ struct AddEntryView: View {
                     )
                 VStack(spacing: 4) {
                     Image(systemName: "plus").font(.system(size: 20))
-                    Text("添加").font(.system(size: 11))
+                    Text(lang.s.add).font(.system(size: 11))
                 }
                 .foregroundColor(.wanderAccent)
             }
@@ -152,8 +158,36 @@ struct AddEntryView: View {
 
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionLabel("类型")
+            sectionLabel(lang.s.category)
             categoryGrid
+        }
+        .alert("新增类型", isPresented: $showAddCategory) {
+            TextField("类型名称", text: $newCategoryName)
+            Button("取消", role: .cancel) { newCategoryName = "" }
+            Button("添加") {
+                let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty {
+                    let cat = store.addCustomCategory(name: trimmed)
+                    categorySelection = .custom(cat.id)
+                }
+                newCategoryName = ""
+            }
+        }
+        .alert("编辑类型", isPresented: $showEditCategory) {
+            TextField("类型名称", text: $newCategoryName)
+            Button("取消", role: .cancel) {
+                editingCustomCategory = nil
+                newCategoryName = ""
+            }
+            Button("保存") {
+                if var cat = editingCustomCategory {
+                    let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
+                    if !trimmed.isEmpty { cat.name = trimmed }
+                    store.updateCustomCategory(cat)
+                }
+                editingCustomCategory = nil
+                newCategoryName = ""
+            }
         }
     }
 
@@ -162,10 +196,56 @@ struct AddEntryView: View {
             columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4),
             spacing: 8
         ) {
-            ForEach(PlaceCategory.allCases) { cat in
-                CategoryButton(cat: cat, isSelected: category == cat) {
-                    category = cat
+            // 固定类型（排除 .other）
+            ForEach(PlaceCategory.allCases.filter { $0 != .other }) { cat in
+                CategoryButton(
+                    icon: cat.icon,
+                    localizedName: cat.localizedName(lang: lang.language),
+                    isSelected: categorySelection == .standard(cat)
+                ) {
+                    categorySelection = .standard(cat)
                 }
+            }
+
+            // 自定义类型
+            ForEach(store.customCategories) { cat in
+                CustomCategoryButton(
+                    category: cat,
+                    isSelected: categorySelection == .custom(cat.id),
+                    onTap: { categorySelection = .custom(cat.id) },
+                    onEdit: {
+                        editingCustomCategory = cat
+                        newCategoryName = cat.name
+                        showEditCategory = true
+                    },
+                    onDelete: {
+                        store.deleteCustomCategory(cat)
+                        if categorySelection == .custom(cat.id) {
+                            categorySelection = .standard(.cafe)
+                        }
+                    }
+                )
+            }
+
+            // 新增按钮
+            Button { newCategoryName = ""; showAddCategory = true } label: {
+                VStack(spacing: 6) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20))
+                        .foregroundColor(.wanderAccent)
+                    Text(lang.s.add)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.wanderInk)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [4]))
+                        .foregroundColor(Color.wanderAccent.opacity(0.6))
+                )
             }
         }
     }
@@ -176,9 +256,9 @@ struct AddEntryView: View {
         VStack(spacing: 12) {
             // 位置 label + 地址输入 + 搜索按钮
             VStack(alignment: .leading, spacing: 8) {
-                sectionLabel("位置")
+                sectionLabel(lang.s.location)
                 HStack(spacing: 8) {
-                    TextField("输入城市名称/粘贴Google地址", text: $addressInput)
+                    TextField(lang.s.addressPlaceholder, text: $addressInput)
                         .textFieldStyle(WanderTextFieldStyle())
                         .onSubmit { geocodeAddress() }
                     Button { geocodeAddress() } label: {
@@ -202,28 +282,30 @@ struct AddEntryView: View {
 
             // 城市 + 国家 + 自动定位
             HStack(spacing: 8) {
-                TextField("城市", text: $city).textFieldStyle(WanderTextFieldStyle())
-                TextField("国家", text: $country).textFieldStyle(WanderTextFieldStyle())
+                TextField(lang.s.city, text: $city).textFieldStyle(WanderTextFieldStyle())
+                TextField(lang.s.country, text: $country).textFieldStyle(WanderTextFieldStyle())
                 locationButton
             }
 
             // 名称 label + 店名输入
             VStack(alignment: .leading, spacing: 8) {
-                sectionLabel("名称")
-                TextField("店名", text: $name).textFieldStyle(WanderTextFieldStyle())
+                sectionLabel(lang.s.name)
+                TextField(lang.s.shopNamePlaceholder, text: $name).textFieldStyle(WanderTextFieldStyle())
             }
 
             if resolvedCoordinate != nil {
                 HStack(spacing: 4) {
                     Image(systemName: "location.fill").font(.system(size: 10))
-                    Text("已获取坐标，将显示在地图上").font(.system(size: 11))
+                    Text(lang.s.coordinateObtained).font(.system(size: 11))
                 }
                 .foregroundColor(.wanderAccent)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            DatePicker("探访日期", selection: $visitedAt, displayedComponents: .date)
-                .font(.system(size: 14)).tint(.wanderAccent)
+            DatePicker(lang.s.visitDate, selection: $visitedAt, displayedComponents: .date)
+                .font(.system(size: 14))
+                .foregroundColor(.wanderInk)
+                .tint(.wanderAccent)
         }
     }
 
@@ -237,7 +319,7 @@ struct AddEntryView: View {
                 } else {
                     Image(systemName: "location.fill")
                 }
-                Text(locationManager.isLocating ? "定位中..." : "自动定位")
+                Text(locationManager.isLocating ? lang.s.locating : lang.s.autoLocate)
             }
             .font(.system(size: 12, weight: .medium))
             .foregroundColor(.wanderAccent)
@@ -245,22 +327,11 @@ struct AddEntryView: View {
         .disabled(locationManager.isLocating)
     }
 
-    // MARK: - Rating & Mood
-
-    private var ratingMoodSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            ratingSection
-            Divider()
-            moodSection
-        }
-        .padding(16)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
+    // MARK: - Rating
 
     private var ratingSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionLabel("评分")
+            sectionLabel(lang.s.rating)
             HStack(spacing: 6) {
                 ForEach(1...5, id: \.self) { star in
                     Button {
@@ -273,43 +344,19 @@ struct AddEntryView: View {
                 }
             }
         }
-    }
-
-    private var moodSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionLabel("心情")
-            HStack(spacing: 10) {
-                moodButton(.loved)
-                moodButton(.relaxed)
-                moodButton(.amazed)
-                moodButton(.neutral)
-                moodButton(.tired)
-            }
-        }
-    }
-
-    private func moodButton(_ m: Mood) -> some View {
-        let isSelected = mood == m
-        return Button {
-            mood = m
-        } label: {
-            Image(systemName: m.icon)
-                .font(.system(size: 20))
-                .foregroundColor(isSelected ? .wanderAccent : .wanderBlush)
-                .padding(6)
-                .background(isSelected ? Color.wanderBlush : Color.clear)
-                .clipShape(Circle())
-        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Note
 
     private var noteSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionLabel("我的感受")
+            sectionLabel(lang.s.myNotes)
             ZStack(alignment: .topLeading) {
                 if note.isEmpty {
-                    Text("写下你的感受，只给自己看...")
+                    Text(lang.s.notesPlaceholder)
                         .font(.system(size: 14))
                         .foregroundColor(.wanderMuted)
                         .padding(.horizontal, 16)
@@ -326,48 +373,6 @@ struct AddEntryView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.wanderBlush, lineWidth: 1))
         }
-    }
-
-    // MARK: - Tags
-
-    private var tagsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionLabel("标签")
-            HStack {
-                TextField("添加标签，按回车确认", text: $tagInput)
-                    .textFieldStyle(WanderTextFieldStyle())
-                    .onSubmit { addTag() }
-                Button("添加") { addTag() }
-                    .foregroundColor(.wanderAccent)
-                    .font(.system(size: 14, weight: .medium))
-            }
-            if !tags.isEmpty {
-                FlowLayout(spacing: 6) {
-                    ForEach(tags, id: \.self) { tag in
-                        tagChip(tag)
-                    }
-                }
-            }
-        }
-    }
-
-    private func tagChip(_ tag: String) -> some View {
-        HStack(spacing: 4) {
-            Text("#\(tag)")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.wanderAccent)
-            Button {
-                tags.removeAll { $0 == tag }
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.wanderMuted)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(Color.wanderBlush)
-        .clipShape(Capsule())
     }
 
     // MARK: - Helpers
@@ -410,12 +415,6 @@ struct AddEntryView: View {
         }
     }
 
-    private func addTag() {
-        let trimmed = tagInput.trimmingCharacters(in: .whitespaces)
-        if !trimmed.isEmpty && !tags.contains(trimmed) { tags.append(trimmed) }
-        tagInput = ""
-    }
-
     private func loadSelectedPhotos(_ items: [PhotosPickerItem]) async {
         var images: [UIImage] = []
         for item in items {
@@ -427,10 +426,14 @@ struct AddEntryView: View {
 
     private func populateIfEditing() {
         guard let entry = editingEntry else { return }
-        name = entry.name; category = entry.category; note = entry.note
-        mood = entry.mood; rating = entry.rating; city = entry.city
+        name = entry.name; note = entry.note
+        rating = entry.rating; city = entry.city
         country = entry.country; visitedAt = entry.visitedAt
-        tags = entry.tags
+        if let customID = entry.customCategoryID {
+            categorySelection = .custom(customID)
+        } else {
+            categorySelection = .standard(entry.category)
+        }
         if let lat = entry.latitude, let lng = entry.longitude {
             resolvedCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
         }
@@ -447,21 +450,28 @@ struct AddEntryView: View {
         defer { isSaving = false }
         do {
             let newFilenames = try PhotoRepository.shared.save(selectedImages)
+            let (cat, customID): (PlaceCategory, UUID?) = {
+                switch categorySelection {
+                case .standard(let c): return (c, nil)
+                case .custom(let id): return (.other, id)
+                }
+            }()
             if var entry = editingEntry {
                 PhotoRepository.shared.delete(entry.photoFilenames)
-                entry.name = name; entry.category = category; entry.note = note
-                entry.mood = mood; entry.rating = rating; entry.city = city
+                entry.name = name; entry.category = cat; entry.note = note
+                entry.rating = rating; entry.city = city
                 entry.country = country; entry.visitedAt = visitedAt
-                entry.photoFilenames = newFilenames; entry.tags = tags
+                entry.photoFilenames = newFilenames
+                entry.customCategoryID = customID
                 store.update(entry)
             } else {
                 let entry = Entry(
-                    name: name, category: category, note: note, mood: mood,
+                    name: name, category: cat, note: note,
                     rating: rating, city: city, country: country,
                     latitude: resolvedCoordinate?.latitude,
                     longitude: resolvedCoordinate?.longitude,
                     photoFilenames: newFilenames, visitedAt: visitedAt,
-                    tags: tags
+                    customCategoryID: customID
                 )
                 store.add(entry)
             }
@@ -476,17 +486,18 @@ struct AddEntryView: View {
 // MARK: - Category Button
 
 struct CategoryButton: View {
-    let cat: PlaceCategory
+    let icon: String
+    let localizedName: String
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                Image(systemName: cat.icon)
+                Image(systemName: icon)
                     .font(.system(size: 20))
                     .foregroundColor(isSelected ? .white : .wanderAccent)
-                Text(cat.rawValue)
+                Text(localizedName)
                     .font(.system(size: 10, weight: .medium))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -502,6 +513,44 @@ struct CategoryButton: View {
             )
         }
         .animation(.easeInOut(duration: 0.15), value: isSelected)
+    }
+}
+
+// MARK: - Custom Category Button
+
+struct CustomCategoryButton: View {
+    let category: CustomCategory
+    let isSelected: Bool
+    let onTap: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 6) {
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? .white : .wanderAccent)
+                Text(category.name)
+                    .font(.system(size: 10, weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .foregroundColor(isSelected ? .white : .wanderInk)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.wanderInk : Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? Color.clear : Color.wanderBlush, lineWidth: 1)
+            )
+        }
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
+        .contextMenu {
+            Button { onEdit() } label: { Label("编辑", systemImage: "pencil") }
+            Button(role: .destructive) { onDelete() } label: { Label("删除", systemImage: "trash") }
+        }
     }
 }
 

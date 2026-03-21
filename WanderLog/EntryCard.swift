@@ -2,6 +2,8 @@ import SwiftUI
 
 struct EntryCard: View {
     let entry: Entry
+    @EnvironmentObject var store: EntryStore
+    @EnvironmentObject var lang: LanguageManager
     @State private var thumbnail: UIImage? = nil
 
     var body: some View {
@@ -22,7 +24,7 @@ struct EntryCard: View {
             )
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) { Image(systemName: entry.category.icon).font(.system(size: 9)); Text(entry.category.rawValue) }
+                HStack(spacing: 4) { Image(systemName: store.categoryIcon(for: entry)).font(.system(size: 9)); Text(store.categoryDisplayName(for: entry, lang: lang.language)) }
                     .font(.system(size: 9, weight: .semibold))
                     .tracking(0.5)
                     .foregroundColor(.white.opacity(0.9))

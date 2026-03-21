@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CollectionView: View {
     @EnvironmentObject var store: EntryStore
+    @EnvironmentObject var lang: LanguageManager
     @State private var viewMode: ViewMode = .category
     @State private var selectedEntry: Entry? = nil
     @State private var showDetail = false
@@ -30,12 +31,15 @@ struct CollectionView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("收藏").font(.wanderSerif(28)).foregroundColor(.wanderInk)
+                    Text(lang.s.collectionTitle).font(.wanderSerif(28)).foregroundColor(.wanderInk)
                         .padding(.horizontal, 24).padding(.top, 20)
-                    Picker("视图", selection: $viewMode) {
-                        ForEach(ViewMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    Picker("", selection: $viewMode) {
+                        Text(lang.s.byCategory).tag(ViewMode.category)
+                        Text(lang.s.byCountry).tag(ViewMode.country)
+                        Text(lang.s.favorites).tag(ViewMode.favorite)
                     }
-                    .pickerStyle(.segmented).padding(.horizontal, 24)
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal, 24)
                 }
                 .padding(.bottom, 16).background(Color.wanderWarm)
 
@@ -62,13 +66,28 @@ struct CollectionView: View {
 
     private var categorySection: some View {
         VStack(spacing: 16) {
-            ForEach(PlaceCategory.allCases) { cat in
-                let catEntries = entriesByCategory[cat] ?? []
-                if !catEntries.isEmpty {
-                    CategoryGroupCard(category: cat, entries: catEntries) { entry in
-                        selectedEntry = entry
-                        showDetail = true
-                    }
+            ForEach(PlaceCategory.allCases.filter { cat in
+                cat != .other && (entriesByCategory[cat] ?? []).contains { $0.customCategoryID == nil }
+            }) { cat in
+                CategoryGroupCard(
+                    category: cat,
+                    entries: (entriesByCategory[cat] ?? []).filter { $0.customCategoryID == nil }
+                ) { entry in
+                    selectedEntry = entry
+                    showDetail = true
+                }
+            }
+            // 自定义类型分组
+            ForEach(store.customCategories.filter { customCat in
+                entries.contains { $0.customCategoryID == customCat.id }
+            }) { customCat in
+                CategoryGroupCard(
+                    category: .other,
+                    categoryDisplayName: customCat.name,
+                    entries: entries.filter { $0.customCategoryID == customCat.id }
+                ) { entry in
+                    selectedEntry = entry
+                    showDetail = true
                 }
             }
         }
@@ -83,7 +102,7 @@ struct CollectionView: View {
                 }
             }
             if entriesByCountry.isEmpty {
-                emptyStateView(icon: "🌍", message: "打卡时填写城市/国家，就能在这里看到")
+                emptyStateView(icon: "🌍", message: lang.s.emptyCountryHint)
             }
         }
     }
@@ -91,7 +110,7 @@ struct CollectionView: View {
     private var favoriteSection: some View {
         VStack(spacing: 12) {
             if favoriteEntries.isEmpty {
-                emptyStateView(icon: "🔖", message: "在打卡详情页点击书签，收藏你最爱的地方")
+                emptyStateView(icon: "🔖", message: lang.s.emptyFavoritesHint)
                     .padding(.top, 40)
             } else {
                 LazyVGrid(
@@ -122,8 +141,10 @@ struct CollectionView: View {
 
 struct CategoryGroupCard: View {
     let category: PlaceCategory
+    var categoryDisplayName: String? = nil
     let entries: [Entry]
     let onTap: (Entry) -> Void
+    @EnvironmentObject var lang: LanguageManager
     @State private var isExpanded = false
 
     var body: some View {
@@ -133,8 +154,8 @@ struct CategoryGroupCard: View {
             } label: {
                 HStack {
                     HStack(spacing: 10) {
-                        Image(systemName: category.icon).font(.system(size: 22)).foregroundColor(.wanderAccent)
-                        Text(category.rawValue).font(.system(size: 16, weight: .semibold))
+                        Image(systemName: categoryDisplayName != nil ? "tag.fill" : category.icon).font(.system(size: 22)).foregroundColor(.wanderAccent)
+                        Text(categoryDisplayName ?? category.localizedName(lang: lang.language)).font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.wanderInk)
                     }
                     Spacer()
@@ -156,7 +177,7 @@ struct CategoryGroupCard: View {
                         }
                     }
                     if entries.count > 5 {
-                        Text("查看全部 \(entries.count) 条").font(.system(size: 13))
+                        Text(lang.s.seeAll(entries.count)).font(.system(size: 13))
                             .foregroundColor(.wanderAccent).frame(maxWidth: .infinity).padding(14)
                     }
                 }
@@ -171,6 +192,7 @@ struct CountryGroupCard: View {
     let country: String
     let entries: [Entry]
     let onTap: (Entry) -> Void
+    @EnvironmentObject var lang: LanguageManager
     @State private var isExpanded = false
 
     var cities: String {
@@ -190,7 +212,7 @@ struct CountryGroupCard: View {
                         }
                     }
                     Spacer()
-                    Text("\(entries.count) 个打卡").font(.system(size: 12)).foregroundColor(.wanderMuted)
+                    Text(lang.s.entriesCount(entries.count)).font(.system(size: 12)).foregroundColor(.wanderMuted)
                     Image(systemName: "chevron.right").font(.system(size: 12)).foregroundColor(.wanderMuted)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 }

@@ -3,6 +3,7 @@ import MapKit
 
 struct MapTabView: View {
     @EnvironmentObject var store: EntryStore
+    @EnvironmentObject var lang: LanguageManager
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 30.0, longitude: 105.0),
         span: MKCoordinateSpan(latitudeDelta: 60, longitudeDelta: 60)
@@ -39,17 +40,17 @@ struct MapTabView: View {
 
                 VStack(spacing: 10) {
                     HStack {
-                        Text("地图").font(.wanderSerif(22)).foregroundColor(.wanderInk)
+                        Text(lang.s.mapTitle).font(.wanderSerif(22)).foregroundColor(.wanderInk)
                         Spacer()
-                        Text("\(filteredEntries.count) 个打卡").font(.system(size: 13)).foregroundColor(.wanderMuted)
+                        Text(lang.s.entriesCount(filteredEntries.count)).font(.system(size: 13)).foregroundColor(.wanderMuted)
                     }
                     .padding(.horizontal, 20).padding(.top, 60)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            CategoryChip(label: "全部", isSelected: selectedCategory == nil) { selectedCategory = nil }
+                            CategoryChip(label: lang.s.all, isSelected: selectedCategory == nil) { selectedCategory = nil }
                             ForEach(PlaceCategory.allCases) { cat in
-                                CategoryChip(icon: cat.icon, label: cat.rawValue, isSelected: selectedCategory == cat) {
+                                CategoryChip(icon: cat.icon, label: cat.localizedName(lang: lang.language), isSelected: selectedCategory == cat) {
                                     selectedCategory = selectedCategory == cat ? nil : cat
                                 }
                             }
@@ -65,8 +66,8 @@ struct MapTabView: View {
                         Spacer()
                         VStack(spacing: 10) {
                             Text("🗺").font(.system(size: 40))
-                            Text("暂无地图打卡").font(.wanderSerif(16)).foregroundColor(.wanderInk)
-                            Text("打卡时开启定位，记录就会出现在地图上")
+                            Text(lang.s.noMapEntries).font(.wanderSerif(16)).foregroundColor(.wanderInk)
+                            Text(lang.s.noMapEntriesHint)
                                 .font(.system(size: 13)).foregroundColor(.wanderMuted).multilineTextAlignment(.center)
                         }
                         .padding(24).background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 20)).padding(40)

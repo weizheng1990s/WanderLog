@@ -17,6 +17,7 @@ struct Entry: Identifiable, Codable {
     var visitedAt: Date
     var createdAt: Date
     var tags: [String]
+    var customCategoryID: UUID?
 
     init(
         name: String,
@@ -31,7 +32,8 @@ struct Entry: Identifiable, Codable {
         photoFilenames: [String] = [],
         isFavorite: Bool = false,
         visitedAt: Date = Date(),
-        tags: [String] = []
+        tags: [String] = [],
+        customCategoryID: UUID? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -48,6 +50,7 @@ struct Entry: Identifiable, Codable {
         self.visitedAt = visitedAt
         self.createdAt = Date()
         self.tags = tags
+        self.customCategoryID = customCategoryID
     }
 
     var coordinate: CLLocationCoordinate2D? {

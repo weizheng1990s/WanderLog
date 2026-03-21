@@ -1,11 +1,21 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import PhotosUI
 
 struct ProfileView: View {
     @EnvironmentObject var store: EntryStore
+    @EnvironmentObject var lang: LanguageManager
     @State private var showExportSheet = false
     @State private var showImportSheet = false
     @State private var showAbout = false
+    @State private var avatarImage: UIImage? = nil
+    @State private var pickerItem: PhotosPickerItem? = nil
+    @AppStorage("profile_name") private var profileName: String = ""
+    @AppStorage("profile_tagline") private var profileTagline: String = ""
+    @State private var isEditingName = false
+    @State private var isEditingTagline = false
+    @State private var editingNameText = ""
+    @State private var editingTaglineText = ""
 
     var entries: [Entry] { store.entries }
 
@@ -45,34 +55,123 @@ struct ProfileView: View {
 
     private var headerSection: some View {
         VStack(spacing: 10) {
-            ZStack {
-                Circle().fill(LinearGradient(colors: [Color(hex:"3D2010"), Color(hex:"8B6040")],
-                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+            PhotosPicker(selection: $pickerItem, matching: .images) {
+                ZStack(alignment: .bottomTrailing) {
+                    Group {
+                        if let img = avatarImage {
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFill()
+                        } else {
+                            LinearGradient(
+                                colors: [Color(hex: "3D2010"), Color(hex: "8B6040")],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .overlay(Text("✈️").font(.system(size: 36)))
+                        }
+                    }
                     .frame(width: 80, height: 80)
-                Text("✈️").font(.system(size: 36))
+                    .clipShape(Circle())
+
+                    // Edit badge
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(5)
+                        .background(Color.wanderAccent)
+                        .clipShape(Circle())
+                        .offset(x: 2, y: 2)
+                }
             }
-            Text("我的手账").font(.wanderSerif(24)).foregroundColor(.wanderInk)
-            Text("记录每一个值得被记住的角落").font(.system(size: 13)).foregroundColor(.wanderMuted)
+            .onChange(of: pickerItem) { item in
+                Task {
+                    if let data = try? await item?.loadTransferable(type: Data.self),
+                       let img = UIImage(data: data) {
+                        avatarImage = img
+                        saveAvatar(img)
+                    }
+                }
+            }
+
+            // Editable name
+            Group {
+                if isEditingName {
+                    TextField("", text: $editingNameText)
+                        .font(.wanderSerif(24))
+                        .foregroundColor(.wanderInk)
+                        .multilineTextAlignment(.center)
+                        .onSubmit { profileName = editingNameText; isEditingName = false }
+                } else {
+                    Text(profileName.isEmpty ? lang.s.profileTitle : profileName)
+                        .font(.wanderSerif(24))
+                        .foregroundColor(.wanderInk)
+                        .onTapGesture {
+                            editingNameText = profileName.isEmpty ? lang.s.profileTitle : profileName
+                            isEditingName = true
+                        }
+                }
+            }
+
+            // Editable tagline
+            Group {
+                if isEditingTagline {
+                    TextField("", text: $editingTaglineText)
+                        .font(.system(size: 13))
+                        .foregroundColor(.wanderMuted)
+                        .multilineTextAlignment(.center)
+                        .onSubmit { profileTagline = editingTaglineText; isEditingTagline = false }
+                } else {
+                    Text(profileTagline.isEmpty ? lang.s.profileTagline : profileTagline)
+                        .font(.system(size: 13))
+                        .foregroundColor(.wanderMuted)
+                        .onTapGesture {
+                            editingTaglineText = profileTagline.isEmpty ? lang.s.profileTagline : profileTagline
+                            isEditingTagline = true
+                        }
+                }
+            }
         }
         .frame(maxWidth: .infinity)
+        .onAppear { avatarImage = loadAvatar() }
+        .onTapGesture {
+            if isEditingName { profileName = editingNameText; isEditingName = false }
+            if isEditingTagline { profileTagline = editingTaglineText; isEditingTagline = false }
+        }
+    }
+
+    private func avatarURL() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("profile_avatar.jpg")
+    }
+
+    private func saveAvatar(_ image: UIImage) {
+        if let data = image.jpegData(compressionQuality: 0.85) {
+            try? data.write(to: avatarURL())
+        }
+    }
+
+    private func loadAvatar() -> UIImage? {
+        guard let data = try? Data(contentsOf: avatarURL()) else { return nil }
+        return UIImage(data: data)
     }
 
     private var bigStatsRow: some View {
         HStack(spacing: 12) {
-            BigStatCard(value: "\(entries.count)", label: "打卡总数", icon: "mappin.circle.fill")
-            BigStatCard(value: "\(uniqueCities.count)", label: "城市", icon: "building.2.fill")
-            BigStatCard(value: "\(uniqueCountries.count)", label: "国家", icon: "globe.asia.australia.fill")
+            BigStatCard(value: "\(entries.count)", label: lang.s.totalCheckIns, icon: "mappin.circle.fill")
+            BigStatCard(value: "\(uniqueCities.count)", label: lang.s.cities, icon: "building.2.fill")
+            BigStatCard(value: "\(uniqueCountries.count)", label: lang.s.countries, icon: "globe.asia.australia.fill")
         }
     }
 
     private var categoryBreakdownCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("品类分布").font(.system(size: 13, weight: .semibold)).tracking(0.5)
+            Text(lang.s.categoryBreakdown).font(.system(size: 13, weight: .semibold)).tracking(0.5)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
             ForEach(categoryBreakdown, id: \.0) { (cat, count) in
                 VStack(spacing: 6) {
                     HStack {
-                        HStack(spacing:4){Image(systemName:cat.icon).font(.system(size:10));Text(cat.rawValue)}.font(.system(size: 14)).foregroundColor(.wanderInk)
+                        HStack(spacing:4){Image(systemName:cat.icon).font(.system(size:10));Text(cat.localizedName(lang: lang.language))}.font(.system(size: 14)).foregroundColor(.wanderInk)
                         Spacer()
                         Text("\(count)").font(.system(size: 13, weight: .medium)).foregroundColor(.wanderMuted)
                     }
@@ -93,7 +192,7 @@ struct ProfileView: View {
 
     private var countriesCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("去过的国家 · \(uniqueCountries.count)").font(.system(size: 13, weight: .semibold))
+            Text(lang.s.visitedCountries(uniqueCountries.count)).font(.system(size: 13, weight: .semibold))
                 .tracking(0.5).foregroundColor(.wanderMuted).textCase(.uppercase)
             FlowLayout(spacing: 8) {
                 ForEach(uniqueCountries, id: \.self) { country in
@@ -108,25 +207,25 @@ struct ProfileView: View {
 
     private var storageCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("存储").font(.system(size: 13, weight: .semibold)).tracking(0.5)
+            Text(lang.s.storage).font(.system(size: 13, weight: .semibold)).tracking(0.5)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
             HStack {
-                Label("照片占用空间", systemImage: "photo.stack.fill").font(.system(size: 14)).foregroundColor(.wanderInk)
+                Label(lang.s.photoStorage, systemImage: "photo.stack.fill").font(.system(size: 14)).foregroundColor(.wanderInk)
                 Spacer()
                 Text(PhotoRepository.shared.totalSizeFormatted).font(.system(size: 14, weight: .medium)).foregroundColor(.wanderMuted)
             }
-            Text("所有数据仅保存在本设备，不上传任何服务器").font(.system(size: 12)).foregroundColor(.wanderMuted).padding(.top, 2)
+            Text(lang.s.privacyNote).font(.system(size: 12)).foregroundColor(.wanderMuted).padding(.top, 2)
         }
         .padding(20).cardStyle()
     }
 
     private var actionsCard: some View {
         VStack(spacing: 0) {
-            ActionRow(icon: "square.and.arrow.up.fill", label: "导出备份") { showExportSheet = true }
+            ActionRow(icon: "square.and.arrow.up.fill", label: lang.s.exportBackup) { showExportSheet = true }
             Divider().padding(.horizontal, 16)
-            ActionRow(icon: "square.and.arrow.down.fill", label: "导入备份") { showImportSheet = true }
+            ActionRow(icon: "square.and.arrow.down.fill", label: lang.s.importBackup) { showImportSheet = true }
             Divider().padding(.horizontal, 16)
-            ActionRow(icon: "info.circle.fill", label: "关于 WANDER") { showAbout = true }
+            ActionRow(icon: "info.circle.fill", label: lang.s.aboutWander) { showAbout = true }
         }
         .cardStyle()
     }
@@ -162,6 +261,7 @@ struct ActionRow: View {
 struct ExportView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: EntryStore
+    @EnvironmentObject var lang: LanguageManager
     @State private var isExporting = false
     @State private var exportURL: URL? = nil
     @State private var showShareSheet = false
@@ -172,14 +272,14 @@ struct ExportView: View {
                 Spacer()
                 Image(systemName: "square.and.arrow.up.fill").font(.system(size: 48)).foregroundColor(.wanderAccent)
                 VStack(spacing: 8) {
-                    Text("备份你的手账").font(.wanderSerif(24)).foregroundColor(.wanderInk)
-                    Text("导出 .json 文件，包含所有打卡记录\n可通过 AirDrop 或文件 App 迁移到新设备")
+                    Text(lang.s.exportTitle).font(.wanderSerif(24)).foregroundColor(.wanderInk)
+                    Text(lang.s.exportDesc)
                         .font(.system(size: 14)).foregroundColor(.wanderMuted)
                         .multilineTextAlignment(.center).lineSpacing(4)
                 }
                 VStack(spacing: 10) {
-                    Text("\(store.entries.count) 条打卡记录").font(.system(size: 15, weight: .medium)).foregroundColor(.wanderInk)
-                    Text("照片占用 \(PhotoRepository.shared.totalSizeFormatted)").font(.system(size: 13)).foregroundColor(.wanderMuted)
+                    Text(lang.s.exportEntriesCount(store.entries.count)).font(.system(size: 15, weight: .medium)).foregroundColor(.wanderInk)
+                    Text(lang.s.exportPhotoSize(PhotoRepository.shared.totalSizeFormatted)).font(.system(size: 13)).foregroundColor(.wanderMuted)
                 }
                 .padding(20).background(Color.wanderBlush.opacity(0.5)).clipShape(RoundedRectangle(cornerRadius: 16))
                 Button {
@@ -189,7 +289,7 @@ struct ExportView: View {
                         if isExporting {
                             ProgressView().tint(.white)
                         } else {
-                            Label("导出备份", systemImage: "square.and.arrow.up")
+                            Label(lang.s.exportButton, systemImage: "square.and.arrow.up")
                         }
                     }
                     .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
@@ -200,8 +300,8 @@ struct ExportView: View {
                 Spacer()
             }
             .padding(24).background(Color.wanderWarm)
-            .navigationTitle("导出备份").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
+            .navigationTitle(lang.s.exportBackup).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(lang.s.close) { dismiss() } } }
             .sheet(isPresented: $showShareSheet) {
                 if let url = exportURL { ShareSheet(items: [url]) }
             }
@@ -227,6 +327,7 @@ struct ExportView: View {
 struct ImportView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: EntryStore
+    @EnvironmentObject var lang: LanguageManager
     @State private var showFilePicker = false
     @State private var isImporting = false
     @State private var resultMessage: String? = nil
@@ -238,8 +339,8 @@ struct ImportView: View {
                 Spacer()
                 Image(systemName: "square.and.arrow.down.fill").font(.system(size: 48)).foregroundColor(.wanderAccent)
                 VStack(spacing: 8) {
-                    Text("还原你的手账").font(.wanderSerif(24)).foregroundColor(.wanderInk)
-                    Text("选择之前导出的 .json 备份文件\n已有记录不会重复导入")
+                    Text(lang.s.importTitle).font(.wanderSerif(24)).foregroundColor(.wanderInk)
+                    Text(lang.s.importDesc)
                         .font(.system(size: 14)).foregroundColor(.wanderMuted)
                         .multilineTextAlignment(.center).lineSpacing(4)
                 }
@@ -255,7 +356,7 @@ struct ImportView: View {
                         if isImporting {
                             ProgressView().tint(.white)
                         } else {
-                            Label("导入备份", systemImage: "square.and.arrow.down")
+                            Label(lang.s.importButton, systemImage: "square.and.arrow.down")
                         }
                     }
                     .font(.system(size: 16, weight: .semibold)).foregroundColor(.white)
@@ -266,8 +367,8 @@ struct ImportView: View {
                 Spacer()
             }
             .padding(24).background(Color.wanderWarm)
-            .navigationTitle("导入备份").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
+            .navigationTitle(lang.s.importBackup).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(lang.s.close) { dismiss() } } }
             .fileImporter(isPresented: $showFilePicker, allowedContentTypes: [.json]) { result in
                 Task { await handleImport(result) }
             }
@@ -279,20 +380,20 @@ struct ImportView: View {
         defer { isImporting = false }
         guard case .success(let url) = result else { return }
         guard url.startAccessingSecurityScopedResource() else {
-            resultMessage = "无法读取文件，请重试"; isSuccess = false; return
+            resultMessage = lang.s.importErrCannotRead; isSuccess = false; return
         }
         defer { url.stopAccessingSecurityScopedResource() }
         guard let data = try? Data(contentsOf: url) else {
-            resultMessage = "文件读取失败"; isSuccess = false; return
+            resultMessage = lang.s.importErrReadFailed; isSuccess = false; return
         }
         let decoder = JSONDecoder(); decoder.dateDecodingStrategy = .iso8601
         guard let entries = try? decoder.decode([Entry].self, from: data) else {
-            resultMessage = "格式不正确，请选择 WanderLog 导出的备份文件"; isSuccess = false; return
+            resultMessage = lang.s.importErrInvalidFormat; isSuccess = false; return
         }
         let existingIDs = Set(store.entries.map { $0.id })
         let newEntries = entries.filter { !existingIDs.contains($0.id) }
         for entry in newEntries { store.add(entry) }
-        resultMessage = newEntries.isEmpty ? "没有新记录可导入" : "成功导入 \(newEntries.count) 条记录"
+        resultMessage = newEntries.isEmpty ? lang.s.importNoNew : lang.s.importSuccess(newEntries.count)
         isSuccess = true
     }
 }
@@ -307,27 +408,28 @@ struct ShareSheet: UIViewControllerRepresentable {
 
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var lang: LanguageManager
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
                 Spacer()
                 Text("✦").font(.system(size: 48)).foregroundColor(.wanderAccent)
                 Text("WANDER").font(.wanderSerif(32)).foregroundColor(.wanderInk)
-                Text("全球探店电子手账").font(.system(size: 16)).foregroundColor(.wanderMuted)
-                Text("版本 \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")")
+                Text(lang.s.appSubtitle).font(.system(size: 16)).foregroundColor(.wanderMuted)
+                Text(lang.s.version(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"))
                     .font(.system(size: 12)).foregroundColor(.wanderMuted)
                 Divider().padding(.horizontal, 40)
                 VStack(spacing: 10) {
-                    AboutRow(icon: "lock.shield.fill", text: "所有数据仅保存在你的设备")
-                    AboutRow(icon: "wifi.slash", text: "完全离线可用")
-                    AboutRow(icon: "person.slash.fill", text: "无账号，无追踪，无广告")
+                    AboutRow(icon: "lock.shield.fill", text: lang.s.aboutPrivacy1)
+                    AboutRow(icon: "wifi.slash", text: lang.s.aboutPrivacy2)
+                    AboutRow(icon: "person.slash.fill", text: lang.s.aboutPrivacy3)
                 }
                 .padding(.horizontal, 32)
                 Spacer()
             }
             .background(Color.wanderWarm)
-            .navigationTitle("关于").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("关闭") { dismiss() } } }
+            .navigationTitle(lang.s.about).navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(lang.s.close) { dismiss() } } }
         }
     }
 }

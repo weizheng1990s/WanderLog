@@ -34,11 +34,12 @@ struct RootView: View {
 struct CustomTabBar: View {
     @Binding var selectedTab: RootView.Tab
     @Binding var showAddEntry: Bool
+    @EnvironmentObject var lang: LanguageManager
 
     var body: some View {
         HStack(spacing: 0) {
-            TabBarItem(icon: "house.fill", label: "首页", tab: .home, selected: $selectedTab)
-            TabBarItem(icon: "map.fill", label: "地图", tab: .map, selected: $selectedTab)
+            TabBarItem(icon: "house.fill", label: lang.s.tabHome, tab: .home, selected: $selectedTab)
+            TabBarItem(icon: "map.fill", label: lang.s.tabMap, tab: .map, selected: $selectedTab)
 
             Button {
                 showAddEntry = true
@@ -56,8 +57,8 @@ struct CustomTabBar: View {
             .offset(y: -12)
             .frame(maxWidth: .infinity)
 
-            TabBarItem(icon: "bookmark.fill", label: "收藏", tab: .collection, selected: $selectedTab)
-            TabBarItem(icon: "person.fill", label: "我的", tab: .profile, selected: $selectedTab)
+            TabBarItem(icon: "bookmark.fill", label: lang.s.tabCollection, tab: .collection, selected: $selectedTab)
+            TabBarItem(icon: "person.fill", label: lang.s.tabProfile, tab: .profile, selected: $selectedTab)
         }
         .padding(.horizontal, 8)
         .padding(.top, 12)
