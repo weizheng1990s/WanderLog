@@ -25,10 +25,12 @@
 		BB000010BB000010BB000010 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000010AA000010AA000010 /* Assets.xcassets */; };
 		BB000012BB000012BB000012 /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000012AA000012AA000012 /* LanguageManager.swift */; };
 		BB000013BB000013BB000013 /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000013AA000013AA000013 /* CalendarView.swift */; };
+		C27D8B092F869DAD00EEDDA5 /* FullMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D8B082F869DAD00EEDDA5 /* FullMapView.swift */; };
+		C27D8B0B2F86A24800EEDDA5 /* IconPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27D8B0A2F86A24800EEDDA5 /* IconPickerSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		41B7F8162F5C404E00AB0757 /* WanderLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WanderLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		41B7F8162F5C404E00AB0757 /* WanderLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = WanderLog.app; path = "Kiro Book.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA000001AA000001AA000001 /* WanderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WanderApp.swift; sourceTree = "<group>"; };
 		AA000002AA000002AA000002 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		AA000003AA000003AA000003 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
@@ -48,6 +50,8 @@
 		AA000011AA000011AA000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA000012AA000012AA000012 /* LanguageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageManager.swift; sourceTree = "<group>"; };
 		AA000013AA000013AA000013 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
+		C27D8B082F869DAD00EEDDA5 /* FullMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullMapView.swift; sourceTree = "<group>"; };
+		C27D8B0A2F86A24800EEDDA5 /* IconPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconPickerSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,6 +98,8 @@
 				AA00000CAA00000CAA00000C /* EntryCard.swift */,
 				AA00000DAA00000DAA00000D /* EntryDetailView.swift */,
 				AA00000EAA00000EAA00000E /* ProfileView.swift */,
+				C27D8B0A2F86A24800EEDDA5 /* IconPickerSheet.swift */,
+				C27D8B082F869DAD00EEDDA5 /* FullMapView.swift */,
 				AA00000FAA00000FAA00000F /* AddEntryView.swift */,
 				AA000010AA000010AA000010 /* Assets.xcassets */,
 				AA000011AA000011AA000011 /* Info.plist */,
@@ -178,6 +184,8 @@
 				BB000002BB000002BB000002 /* RootView.swift in Sources */,
 				BB000003BB000003BB000003 /* DesignSystem.swift in Sources */,
 				BB000004BB000004BB000004 /* PhotoRepository.swift in Sources */,
+				C27D8B092F869DAD00EEDDA5 /* FullMapView.swift in Sources */,
+				C27D8B0B2F86A24800EEDDA5 /* IconPickerSheet.swift in Sources */,
 				BB000005BB000005BB000005 /* Entry.swift in Sources */,
 				BB000006BB000006BB000006 /* EntryStore.swift in Sources */,
 				BB000007BB000007BB000007 /* HomeView.swift in Sources */,

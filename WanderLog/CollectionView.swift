@@ -66,29 +66,21 @@ struct CollectionView: View {
 
     private var categorySection: some View {
         VStack(spacing: 16) {
-            ForEach(PlaceCategory.allCases.filter { cat in
-                cat != .other && (entriesByCategory[cat] ?? []).contains { $0.customCategoryID == nil }
-            }) { cat in
-                CategoryGroupCard(
-                    category: cat,
-                    entries: (entriesByCategory[cat] ?? []).filter { $0.customCategoryID == nil }
-                ) { entry in
-                    selectedEntry = entry
-                    showDetail = true
-                }
-            }
-            // 自定义类型分组
             ForEach(store.customCategories.filter { customCat in
                 entries.contains { $0.customCategoryID == customCat.id }
             }) { customCat in
                 CategoryGroupCard(
                     category: .other,
                     categoryDisplayName: customCat.name,
+                    categoryIcon: customCat.icon,
                     entries: entries.filter { $0.customCategoryID == customCat.id }
                 ) { entry in
                     selectedEntry = entry
                     showDetail = true
                 }
+            }
+            if store.customCategories.isEmpty || !entries.contains(where: { $0.customCategoryID != nil }) {
+                emptyStateView(icon: "📂", message: "还没有打卡记录")
             }
         }
     }
@@ -142,6 +134,7 @@ struct CollectionView: View {
 struct CategoryGroupCard: View {
     let category: PlaceCategory
     var categoryDisplayName: String? = nil
+    var categoryIcon: String? = nil
     let entries: [Entry]
     let onTap: (Entry) -> Void
     @EnvironmentObject var lang: LanguageManager
@@ -154,7 +147,7 @@ struct CategoryGroupCard: View {
             } label: {
                 HStack {
                     HStack(spacing: 10) {
-                        Image(systemName: categoryDisplayName != nil ? "tag.fill" : category.icon).font(.system(size: 22)).foregroundColor(.wanderAccent)
+                        Image(systemName: categoryIcon ?? category.icon).font(.system(size: 22)).foregroundColor(.wanderAccent)
                         Text(categoryDisplayName ?? category.localizedName(lang: lang.language)).font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.wanderInk)
                     }

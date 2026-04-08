@@ -55,7 +55,7 @@ struct WanderCalendar: View {
                     else if v.translation.width > 50 { changeMonth(by: -1) }
                 }
         )
-        .fullScreenCover(item: $daySheetItem) { item in
+        .sheet(item: $daySheetItem) { item in
             DayEntriesSheet(entries: item.entries)
                 .environmentObject(store)
                 .environmentObject(lang)
@@ -219,6 +219,8 @@ struct DayEntriesSheet: View {
     @State private var currentIndex: Int = 0
     @State private var navigateToDetail = false
     @State private var selectedEntry: Entry? = nil
+    @Environment(\.scenePhase) private var scenePhase
+  
 
     var body: some View {
         NavigationStack {
@@ -262,6 +264,10 @@ struct DayEntriesSheet: View {
                     Button(lang.s.close) { dismiss() }
                         .foregroundColor(.wanderMuted)
                 }
+            }
+            .onChange(of: scenePhase) { phase in
+                // 后台回来时保持当前页，不做任何跳转
+                if phase == .active { }
             }
         }
     }

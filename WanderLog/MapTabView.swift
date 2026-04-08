@@ -29,11 +29,15 @@ struct MapTabView: View {
                     showsUserLocation: true,
                     annotationItems: filteredEntries) { entry in
                     MapAnnotation(coordinate: entry.coordinate!) {
-                        EntryMapPin(entry: entry, isSelected: selectedEntry?.id == entry.id)
-                            .onTapGesture {
-                                selectedEntry = entry
-                                showDetail = true
-                            }
+                        EntryMapPin(
+                            entry: entry,
+                            isSelected: selectedEntry?.id == entry.id,
+                            categoryIcon: store.categoryIcon(for: entry)
+                        )
+                        .onTapGesture {
+                            selectedEntry = entry
+                            showDetail = true
+                        }
                     }
                 }
                 .ignoresSafeArea(edges: .all)
@@ -87,24 +91,35 @@ struct MapTabView: View {
 struct EntryMapPin: View {
     let entry: Entry
     let isSelected: Bool
+    let categoryIcon: String
 
     var body: some View {
         VStack(spacing: 2) {
             ZStack {
-                Capsule().fill(isSelected ? Color.wanderInk : Color.white)
-                    .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
+                Capsule()
+                    .fill(isSelected ? Color.wanderAccent : Color(UIColor.systemBackground))
+                    .shadow(color: .black.opacity(0.25), radius: 5, y: 2)
                 HStack(spacing: 4) {
-                    Image(systemName: entry.category.icon).font(.system(size: 12))
+                    Image(systemName: categoryIcon)
+                        .font(.system(size: 12))
+                        .foregroundColor(isSelected ? .white : .wanderAccent)
                     if isSelected {
-                        Text(entry.name).font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.wanderCream).lineLimit(1)
+                        Text(entry.name)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
                     }
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6)
             }
             .frame(height: 30)
-            Circle().fill(isSelected ? Color.wanderInk : Color.white)
-                .frame(width: 6, height: 6).shadow(color: .black.opacity(0.15), radius: 1)
+            .overlay(
+                Capsule().stroke(isSelected ? Color.clear : Color.wanderAccent.opacity(0.3), lineWidth: 1)
+            )
+            Circle()
+                .fill(isSelected ? Color.wanderAccent : Color(UIColor.systemBackground))
+                .frame(width: 6, height: 6)
+                .shadow(color: .black.opacity(0.2), radius: 1)
         }
         .scaleEffect(isSelected ? 1.1 : 1.0)
         .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isSelected)

@@ -168,7 +168,7 @@ struct ProfileView: View {
                             Capsule().fill(Color.wanderBlush).frame(height: 5)
                             Capsule().fill(Color.wanderAccent)
                                 .frame(width: geo.size.width * CGFloat(count) / CGFloat(max(entries.count, 1)), height: 5)
-                                .animation(.spring(duration: 0.5), value: count)
+                                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: count)
                         }
                     }
                     .frame(height: 5)

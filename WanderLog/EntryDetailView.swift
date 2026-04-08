@@ -11,6 +11,8 @@ struct EntryDetailView: View {
     @State private var selectedPhotoIndex = 0
     @State private var showDeleteAlert = false
     @State private var showEditSheet = false
+    @State private var showFullMap = false
+   
 
     // Always read from store so edits are reflected live
     private var liveEntry: Entry {
@@ -25,9 +27,9 @@ struct EntryDetailView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     titleSection
                     Divider().foregroundColor(.wanderBlush)
-                    if !liveEntry.note.isEmpty { noteSection }
                     if !liveEntry.tags.isEmpty { tagsSection }
                     infoGrid
+                    if !liveEntry.note.isEmpty { noteSection }
                     if liveEntry.coordinate != nil { mapSnippet }
                     Spacer(minLength: 100)
                 }
@@ -105,21 +107,22 @@ struct EntryDetailView: View {
                         .foregroundColor(star <= liveEntry.rating ? .wanderAccent : .wanderBlush)
                         .font(.system(size: 16))
                 }
-                Image(systemName: liveEntry.mood.icon).font(.system(size: 18)).padding(.leading, 8)
             }
         }
     }
 
     private var noteSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(lang.s.myNotesLabel, systemImage: "pencil")
+            Text(lang.s.myNotes)
                 .font(.system(size: 11, weight: .semibold)).tracking(1)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
             Text(liveEntry.note)
-                .font(.system(size: 15)).foregroundColor(.wanderInk)
-                .lineSpacing(6).italic()
+                .font(.system(size: 14)).foregroundColor(.wanderInk)
+                .lineSpacing(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16).background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.wanderBlush, lineWidth: 1))
         }
     }
 
@@ -136,8 +139,6 @@ struct EntryDetailView: View {
 
     private var infoGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            InfoCard(label: lang.s.mood, value: liveEntry.mood.localizedLabel(lang: lang.language))
-            InfoCard(label: lang.s.rating, value: "\(liveEntry.rating) / 5 ⭐")
             if !liveEntry.city.isEmpty { InfoCard(label: lang.s.city, value: liveEntry.city) }
             if !liveEntry.country.isEmpty { InfoCard(label: lang.s.country, value: liveEntry.country) }
         }
@@ -153,20 +154,41 @@ struct EntryDetailView: View {
                     center: coord,
                     span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
                 )
-                Map(coordinateRegion: .constant(region),
-                    annotationItems: [liveEntry]) { e in
-                    MapAnnotation(coordinate: coord) {
-                        ZStack {
-                            Circle().fill(Color.wanderAccent).frame(width: 28, height: 28)
-                            Image(systemName: store.categoryIcon(for: liveEntry))
-                                .font(.system(size: 12))
-                                .foregroundColor(.white)
+                Button { showFullMap = true } label: {
+                    ZStack(alignment: .bottomTrailing) {
+                        Map(coordinateRegion: .constant(region),
+                            annotationItems: [liveEntry]) { e in
+                            MapAnnotation(coordinate: coord) {
+                                ZStack {
+                                    Circle().fill(Color.wanderAccent).frame(width: 28, height: 28)
+                                    Image(systemName: store.categoryIcon(for: liveEntry))
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white)
+                                }
+                            }
                         }
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .allowsHitTesting(false)
+
+                        // 右下角提示
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 10, weight: .medium))
+                            Text("全屏查看")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(.black.opacity(0.45))
+                        .clipShape(Capsule())
+                        .padding(10)
                     }
                 }
-                .frame(height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .allowsHitTesting(false)
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showFullMap) {
+                    FullMapView(entry: liveEntry, categoryIcon: store.categoryIcon(for: liveEntry))
+                }
             }
         }
     }

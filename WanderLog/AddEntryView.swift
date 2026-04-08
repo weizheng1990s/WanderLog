@@ -20,6 +20,7 @@ struct AddEntryView: View {
     @State private var showAddCategory = false
     @State private var showEditCategory = false
     @State private var newCategoryName = ""
+    @State private var newCategoryIcon = "tag.fill"
     @State private var editingCustomCategory: CustomCategory? = nil
     @State private var note: String = ""
     @State private var rating: Int = 4
@@ -34,6 +35,9 @@ struct AddEntryView: View {
     @State private var isSaving = false
     @State private var showError = false
     @State private var errorMessage = ""
+
+    // drag state
+    @State private var draggingIndex: Int? = nil
 
     @ObservedObject private var locationManager = LocationManager.shared
 
@@ -71,10 +75,7 @@ struct AddEntryView: View {
         .onAppear { populateIfEditing() }
         .onChange(of: selectedItems) { items in Task { await loadSelectedPhotos(items) } }
         .onChange(of: locationManager.city) { val in
-            if !val.isEmpty {
-                city = val
-                resolvedCoordinate = locationManager.coordinate
-            }
+            if !val.isEmpty { city = val; resolvedCoordinate = locationManager.coordinate }
         }
         .onChange(of: locationManager.country) { val in
             if !val.isEmpty { country = val }
@@ -82,17 +83,14 @@ struct AddEntryView: View {
     }
 
     private var saveButton: some View {
-        Button {
-            Task { await save() }
-        } label: {
+        Button { Task { await save() } } label: {
             if isSaving {
                 ProgressView().tint(.wanderInk)
             } else {
                 Text(lang.s.save)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 7)
+                    .padding(.horizontal, 16).padding(.vertical, 7)
                     .background(name.isEmpty ? Color.wanderMuted : Color.wanderInk)
                     .clipShape(Capsule())
             }
@@ -100,20 +98,64 @@ struct AddEntryView: View {
         .disabled(name.isEmpty || isSaving)
     }
 
-    // MARK: - Photo
+    // MARK: - Photo Section (draggable)
 
     private var photoSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionLabel(lang.s.photos)
+            HStack {
+                sectionLabel(lang.s.photos)
+                if selectedImages.count > 1 {
+                    Text("长按拖拽可排序")
+                        .font(.system(size: 11))
+                        .foregroundColor(.wanderMuted)
+                }
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(Array(selectedImages.enumerated()), id: \.offset) { idx, img in
-                        photoThumb(img, index: idx)
+                        draggablePhotoThumb(img, index: idx)
                     }
                     addPhotoButton
                 }
+                .padding(.vertical, 6) // 给拖拽留点空间
             }
         }
+    }
+
+    private func draggablePhotoThumb(_ image: UIImage, index: Int) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Image(uiImage: image)
+                .resizable().scaledToFill()
+                .frame(width: 90, height: 90)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(draggingIndex == index ? Color.wanderAccent : Color.clear, lineWidth: 2)
+                )
+                .scaleEffect(draggingIndex == index ? 1.05 : 1.0)
+                .opacity(draggingIndex == index ? 0.75 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: draggingIndex)
+
+            // 删除按钮
+            Button {
+                selectedImages.remove(at: index)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.white)
+                    .shadow(radius: 2)
+            }
+            .offset(x: 6, y: -6)
+        }
+        .onDrag {
+            draggingIndex = index
+            return NSItemProvider(object: "\(index)" as NSString)
+        }
+        .onDrop(of: [.text], delegate: PhotoDropDelegate(
+            toIndex: index,
+            images: $selectedImages,
+            draggingIndex: $draggingIndex
+        ))
     }
 
     private var addPhotoButton: some View {
@@ -136,24 +178,6 @@ struct AddEntryView: View {
         }
     }
 
-    private func photoThumb(_ image: UIImage, index: Int) -> some View {
-        ZStack(alignment: .topTrailing) {
-            Image(uiImage: image)
-                .resizable().scaledToFill()
-                .frame(width: 90, height: 90)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-            Button {
-                selectedImages.remove(at: index)
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(.white)
-                    .shadow(radius: 2)
-            }
-            .offset(x: 6, y: -6)
-        }
-    }
-
     // MARK: - Category
 
     private var categorySection: some View {
@@ -161,86 +185,65 @@ struct AddEntryView: View {
             sectionLabel(lang.s.category)
             categoryGrid
         }
-        .alert("新增类型", isPresented: $showAddCategory) {
-            TextField("类型名称", text: $newCategoryName)
-            Button("取消", role: .cancel) { newCategoryName = "" }
-            Button("添加") {
+        .sheet(isPresented: $showAddCategory) {
+            IconPickerSheet(
+                title: "新增类型",
+                name: $newCategoryName,
+                icon: $newCategoryIcon
+            ) {
                 let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
                 if !trimmed.isEmpty {
-                    let cat = store.addCustomCategory(name: trimmed)
+                    let cat = store.addCustomCategory(name: trimmed, icon: newCategoryIcon)
                     categorySelection = .custom(cat.id)
                 }
                 newCategoryName = ""
+                newCategoryIcon = "tag.fill"
             }
         }
-        .alert("编辑类型", isPresented: $showEditCategory) {
-            TextField("类型名称", text: $newCategoryName)
-            Button("取消", role: .cancel) {
-                editingCustomCategory = nil
-                newCategoryName = ""
-            }
-            Button("保存") {
+        .sheet(isPresented: $showEditCategory) {
+            IconPickerSheet(
+                title: "编辑类型",
+                name: $newCategoryName,
+                icon: $newCategoryIcon
+            ) {
                 if var cat = editingCustomCategory {
                     let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
-                    if !trimmed.isEmpty { cat.name = trimmed }
+                    if !trimmed.isEmpty {
+                        cat.name = trimmed
+                        cat.icon = newCategoryIcon
+                    }
                     store.updateCustomCategory(cat)
                 }
                 editingCustomCategory = nil
                 newCategoryName = ""
+                newCategoryIcon = "tag.fill"
             }
         }
     }
 
     private var categoryGrid: some View {
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4),
-            spacing: 8
-        ) {
-            // 固定类型（排除 .other）
-            ForEach(PlaceCategory.allCases.filter { $0 != .other }) { cat in
-                CategoryButton(
-                    icon: cat.icon,
-                    localizedName: cat.localizedName(lang: lang.language),
-                    isSelected: categorySelection == .standard(cat)
-                ) {
-                    categorySelection = .standard(cat)
-                }
-            }
-
-            // 自定义类型
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
             ForEach(store.customCategories) { cat in
                 CustomCategoryButton(
                     category: cat,
                     isSelected: categorySelection == .custom(cat.id),
                     onTap: { categorySelection = .custom(cat.id) },
-                    onEdit: {
-                        editingCustomCategory = cat
-                        newCategoryName = cat.name
-                        showEditCategory = true
-                    },
+                    onEdit: { editingCustomCategory = cat; newCategoryName = cat.name; newCategoryIcon = cat.icon; showEditCategory = true },
                     onDelete: {
                         store.deleteCustomCategory(cat)
                         if categorySelection == .custom(cat.id) {
-                            categorySelection = .standard(.cafe)
+                            categorySelection = store.customCategories.first.map { .custom($0.id) } ?? .standard(.other)
                         }
                     }
                 )
             }
-
-            // 新增按钮
             Button { newCategoryName = ""; showAddCategory = true } label: {
                 VStack(spacing: 6) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 20))
-                        .foregroundColor(.wanderAccent)
-                    Text(lang.s.add)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.wanderInk)
+                    Image(systemName: "plus").font(.system(size: 20)).foregroundColor(.wanderAccent)
+                    Text(lang.s.add).font(.system(size: 10, weight: .medium)).foregroundColor(.wanderInk)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
                         .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [4]))
@@ -250,11 +253,10 @@ struct AddEntryView: View {
         }
     }
 
-    // MARK: - Location + Basic Info
+    // MARK: - Location
 
     private var locationSection: some View {
         VStack(spacing: 12) {
-            // 位置 label + 地址输入 + 搜索按钮
             VStack(alignment: .leading, spacing: 8) {
                 sectionLabel(lang.s.location)
                 HStack(spacing: 8) {
@@ -266,8 +268,7 @@ struct AddEntryView: View {
                             if isGeocoding {
                                 ProgressView().scaleEffect(0.7).tint(.wanderAccent)
                             } else {
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 15, weight: .medium))
+                                Image(systemName: "magnifyingglass").font(.system(size: 15, weight: .medium))
                             }
                         }
                         .foregroundColor(.wanderAccent)
@@ -279,20 +280,15 @@ struct AddEntryView: View {
                     .disabled(isGeocoding || addressInput.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
-
-            // 城市 + 国家 + 自动定位
             HStack(spacing: 8) {
                 TextField(lang.s.city, text: $city).textFieldStyle(WanderTextFieldStyle())
                 TextField(lang.s.country, text: $country).textFieldStyle(WanderTextFieldStyle())
                 locationButton
             }
-
-            // 名称 label + 店名输入
             VStack(alignment: .leading, spacing: 8) {
                 sectionLabel(lang.s.name)
                 TextField(lang.s.shopNamePlaceholder, text: $name).textFieldStyle(WanderTextFieldStyle())
             }
-
             if resolvedCoordinate != nil {
                 HStack(spacing: 4) {
                     Image(systemName: "location.fill").font(.system(size: 10))
@@ -301,18 +297,13 @@ struct AddEntryView: View {
                 .foregroundColor(.wanderAccent)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-
             DatePicker(lang.s.visitDate, selection: $visitedAt, displayedComponents: .date)
-                .font(.system(size: 14))
-                .foregroundColor(.wanderInk)
-                .tint(.wanderAccent)
+                .font(.system(size: 14)).foregroundColor(.wanderInk).tint(.wanderAccent)
         }
     }
 
     private var locationButton: some View {
-        Button {
-            locationManager.requestLocation()
-        } label: {
+        Button { locationManager.requestLocation() } label: {
             HStack(spacing: 4) {
                 if locationManager.isLocating {
                     ProgressView().scaleEffect(0.7).tint(.wanderAccent)
@@ -334,9 +325,7 @@ struct AddEntryView: View {
             sectionLabel(lang.s.rating)
             HStack(spacing: 6) {
                 ForEach(1...5, id: \.self) { star in
-                    Button {
-                        rating = star
-                    } label: {
+                    Button { rating = star } label: {
                         Image(systemName: star <= rating ? "star.fill" : "star")
                             .foregroundColor(star <= rating ? .wanderAccent : .wanderBlush)
                             .font(.system(size: 22))
@@ -344,9 +333,7 @@ struct AddEntryView: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(16).background(Color.white).clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Note
@@ -357,20 +344,14 @@ struct AddEntryView: View {
             ZStack(alignment: .topLeading) {
                 if note.isEmpty {
                     Text(lang.s.notesPlaceholder)
-                        .font(.system(size: 14))
-                        .foregroundColor(.wanderMuted)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 14)
+                        .font(.system(size: 14)).foregroundColor(.wanderMuted)
+                        .padding(.horizontal, 16).padding(.top, 14)
                 }
                 TextEditor(text: $note)
-                    .font(.system(size: 14))
-                    .foregroundColor(.wanderInk)
-                    .frame(minHeight: 100)
-                    .scrollContentBackground(.hidden)
-                    .padding(10)
+                    .font(.system(size: 14)).foregroundColor(.wanderInk)
+                    .frame(minHeight: 100).scrollContentBackground(.hidden).padding(10)
             }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.wanderBlush, lineWidth: 1))
         }
     }
@@ -378,38 +359,33 @@ struct AddEntryView: View {
     // MARK: - Helpers
 
     private func sectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 11, weight: .semibold))
-            .tracking(1)
-            .foregroundColor(.wanderMuted)
-            .textCase(.uppercase)
+        Text(text).font(.system(size: 11, weight: .semibold)).tracking(1)
+            .foregroundColor(.wanderMuted).textCase(.uppercase)
     }
 
     private func geocodeAddress() {
         let query = addressInput.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return }
         isGeocoding = true
-
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
         MKLocalSearch(request: request).start { response, _ in
             if let item = response?.mapItems.first {
                 DispatchQueue.main.async {
                     self.isGeocoding = false
-                    if let locality = item.placemark.locality, !locality.isEmpty { self.city = locality }
-                    if let countryName = item.placemark.country, !countryName.isEmpty { self.country = countryName }
+                    if let l = item.placemark.locality, !l.isEmpty { self.city = l }
+                    if let c = item.placemark.country, !c.isEmpty { self.country = c }
                     self.resolvedCoordinate = item.placemark.coordinate
                 }
                 return
             }
-            // 搜索无结果，回退到纯地址解析
             CLGeocoder().geocodeAddressString(query) { placemarks, _ in
                 DispatchQueue.main.async {
                     self.isGeocoding = false
-                    guard let placemark = placemarks?.first else { return }
-                    if let locality = placemark.locality, !locality.isEmpty { self.city = locality }
-                    if let countryName = placemark.country, !countryName.isEmpty { self.country = countryName }
-                    self.resolvedCoordinate = placemark.location?.coordinate
+                    guard let p = placemarks?.first else { return }
+                    if let l = p.locality, !l.isEmpty { self.city = l }
+                    if let c = p.country, !c.isEmpty { self.country = c }
+                    self.resolvedCoordinate = p.location?.coordinate
                 }
             }
         }
@@ -425,6 +401,13 @@ struct AddEntryView: View {
     }
 
     private func populateIfEditing() {
+        // 新建时默认选中第一个自定义分类
+        if editingEntry == nil {
+            if let first = store.customCategories.first {
+                categorySelection = .custom(first.id)
+            }
+            return
+        }
         guard let entry = editingEntry else { return }
         name = entry.name; note = entry.note
         rating = entry.rating; city = entry.city
@@ -432,15 +415,19 @@ struct AddEntryView: View {
         if let customID = entry.customCategoryID {
             categorySelection = .custom(customID)
         } else {
-            categorySelection = .standard(entry.category)
+            // 兼容旧数据：找名字匹配的自定义分类
+            let matchName = entry.category.rawValue
+            if let matched = store.customCategories.first(where: { $0.name == matchName }) {
+                categorySelection = .custom(matched.id)
+            } else {
+                categorySelection = store.customCategories.first.map { .custom($0.id) } ?? .standard(.other)
+            }
         }
         if let lat = entry.latitude, let lng = entry.longitude {
             resolvedCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lng)
         }
         Task {
-            let loaded = await Task.detached {
-                PhotoRepository.shared.loadAll(entry.photoFilenames)
-            }.value
+            let loaded = await Task.detached { PhotoRepository.shared.loadAll(entry.photoFilenames) }.value
             selectedImages = loaded
         }
     }
@@ -461,8 +448,7 @@ struct AddEntryView: View {
                 entry.name = name; entry.category = cat; entry.note = note
                 entry.rating = rating; entry.city = city
                 entry.country = country; entry.visitedAt = visitedAt
-                entry.photoFilenames = newFilenames
-                entry.customCategoryID = customID
+                entry.photoFilenames = newFilenames; entry.customCategoryID = customID
                 store.update(entry)
             } else {
                 let entry = Entry(
@@ -477,9 +463,34 @@ struct AddEntryView: View {
             }
             dismiss()
         } catch {
-            errorMessage = error.localizedDescription
-            showError = true
+            errorMessage = error.localizedDescription; showError = true
         }
+    }
+}
+
+// MARK: - Photo Drop Delegate
+
+struct PhotoDropDelegate: DropDelegate {
+    let toIndex: Int
+    @Binding var images: [UIImage]
+    @Binding var draggingIndex: Int?
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggingIndex = nil
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let from = draggingIndex, from != toIndex else { return }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            images.move(fromOffsets: IndexSet(integer: from),
+                        toOffset: toIndex > from ? toIndex + 1 : toIndex)
+        }
+        draggingIndex = toIndex
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
     }
 }
 
@@ -494,23 +505,17 @@ struct CategoryButton: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
+                Image(systemName: icon).font(.system(size: 20))
                     .foregroundColor(isSelected ? .white : .wanderAccent)
-                Text(localizedName)
-                    .font(.system(size: 10, weight: .medium))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                Text(localizedName).font(.system(size: 10, weight: .medium))
+                    .lineLimit(1).minimumScaleFactor(0.7)
                     .foregroundColor(isSelected ? .white : .wanderInk)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity).padding(.vertical, 12)
             .background(isSelected ? Color.wanderInk : Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(isSelected ? Color.clear : Color.wanderBlush, lineWidth: 1)
-            )
+            .overlay(RoundedRectangle(cornerRadius: 14)
+                .stroke(isSelected ? Color.clear : Color.wanderBlush, lineWidth: 1))
         }
         .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
@@ -528,23 +533,17 @@ struct CustomCategoryButton: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 6) {
-                Image(systemName: "tag.fill")
-                    .font(.system(size: 20))
+                Image(systemName: category.icon).font(.system(size: 20))
                     .foregroundColor(isSelected ? .white : .wanderAccent)
-                Text(category.name)
-                    .font(.system(size: 10, weight: .medium))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                Text(category.name).font(.system(size: 10, weight: .medium))
+                    .lineLimit(1).minimumScaleFactor(0.7)
                     .foregroundColor(isSelected ? .white : .wanderInk)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity).padding(.vertical, 12)
             .background(isSelected ? Color.wanderInk : Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(isSelected ? Color.clear : Color.wanderBlush, lineWidth: 1)
-            )
+            .overlay(RoundedRectangle(cornerRadius: 14)
+                .stroke(isSelected ? Color.clear : Color.wanderBlush, lineWidth: 1))
         }
         .animation(.easeInOut(duration: 0.15), value: isSelected)
         .contextMenu {
@@ -559,15 +558,9 @@ struct CustomCategoryButton: View {
 struct WanderTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
-            .font(.system(size: 14))
-            .foregroundColor(Color.wanderInk)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 13)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.wanderBlush, lineWidth: 1)
-            )
+            .font(.system(size: 14)).foregroundColor(Color.wanderInk)
+            .padding(.horizontal, 16).padding(.vertical, 13)
+            .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.wanderBlush, lineWidth: 1))
     }
 }

@@ -3,6 +3,8 @@ import SwiftUI
 struct RootView: View {
     @State private var selectedTab: Tab = .home
     @State private var showAddEntry = false
+    @Environment(\.scenePhase) private var scenePhase
+
 
     enum Tab {
         case home, map, collection, profile

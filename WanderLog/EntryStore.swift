@@ -4,13 +4,13 @@ import Combine
 struct CustomCategory: Identifiable, Codable, Equatable {
     var id: UUID
     var name: String
+    var icon: String
 
-    init(id: UUID = UUID(), name: String) {
+    init(id: UUID = UUID(), name: String, icon: String = "tag.fill") {
         self.id = id
         self.name = name
+        self.icon = icon
     }
-
-    var icon: String { "tag.fill" }
 }
 
 final class EntryStore: ObservableObject {
@@ -30,6 +30,22 @@ final class EntryStore: ObservableObject {
     init() {
         load()
         loadCustomCategories()
+        seedDefaultCategoriesIfNeeded()
+    }
+
+    private func seedDefaultCategoriesIfNeeded() {
+        guard customCategories.isEmpty else { return }
+        let defaults: [(String, String)] = [
+            ("咖啡馆",       "cup.and.saucer.fill"),
+            ("博物馆",       "building.columns.fill"),
+            ("书店",         "books.vertical.fill"),
+            ("酒吧",         "wineglass.fill"),
+            ("展览 / 美术馆","photo.artframe"),
+            ("买手店",       "bag.fill"),
+            ("餐厅",         "fork.knife"),
+        ]
+        customCategories = defaults.map { CustomCategory(name: $0.0, icon: $0.1) }
+        saveCustomCategories()
     }
 
     // MARK: - Entry CRUD
@@ -54,8 +70,8 @@ final class EntryStore: ObservableObject {
     // MARK: - CustomCategory CRUD
 
     @discardableResult
-    func addCustomCategory(name: String) -> CustomCategory {
-        let cat = CustomCategory(name: name)
+    func addCustomCategory(name: String, icon: String = "tag.fill") -> CustomCategory {
+        let cat = CustomCategory(name: name, icon: icon)
         customCategories.append(cat)
         saveCustomCategories()
         return cat
@@ -89,7 +105,7 @@ final class EntryStore: ObservableObject {
     }
 
     func categoryIcon(for entry: Entry) -> String {
-        if customCategory(for: entry) != nil { return "tag.fill" }
+        if let custom = customCategory(for: entry) { return custom.icon }
         return entry.category.icon
     }
 

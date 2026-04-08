@@ -101,18 +101,9 @@ struct HomeView: View {
                 CategoryChip(label: lang.s.all, isSelected: selectedFilter == nil) {
                     selectedFilter = nil
                 }
-                ForEach(PlaceCategory.allCases.filter { $0 != .other }) { cat in
-                    CategoryChip(
-                        icon: cat.icon,
-                        label: cat.localizedName(lang: lang.language),
-                        isSelected: selectedFilter == .standard(cat)
-                    ) {
-                        selectedFilter = selectedFilter == .standard(cat) ? nil : .standard(cat)
-                    }
-                }
                 ForEach(store.customCategories) { cat in
                     CategoryChip(
-                        icon: "tag.fill",
+                        icon: cat.icon,
                         label: cat.name,
                         isSelected: selectedFilter == .custom(cat.id)
                     ) {
