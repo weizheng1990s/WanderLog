@@ -30,6 +30,7 @@ struct RootView: View {
             AddEntryView()
         }
         .ignoresSafeArea(edges: .bottom)
+        .preferredColorScheme(.light)
     }
 }
 
