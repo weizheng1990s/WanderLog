@@ -30,7 +30,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		41B7F8162F5C404E00AB0757 /* WanderLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = WanderLog.app; path = "Kiro Book.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		41B7F8162F5C404E00AB0757 /* Kiro Book.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Kiro Book.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA000001AA000001AA000001 /* WanderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WanderApp.swift; sourceTree = "<group>"; };
 		AA000002AA000002AA000002 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		AA000003AA000003AA000003 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
@@ -76,7 +76,7 @@
 		41B7F8172F5C404E00AB0757 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				41B7F8162F5C404E00AB0757 /* WanderLog.app */,
+				41B7F8162F5C404E00AB0757 /* Kiro Book.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -128,7 +128,7 @@
 			packageProductDependencies = (
 			);
 			productName = WanderLog;
-			productReference = 41B7F8162F5C404E00AB0757 /* WanderLog.app */;
+			productReference = 41B7F8162F5C404E00AB0757 /* Kiro Book.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -345,7 +345,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.minami-studio.kiro";
 				PRODUCT_NAME = "Kiro Book";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -382,7 +382,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.minami-studio.kiro";
 				PRODUCT_NAME = "Kiro Book";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
