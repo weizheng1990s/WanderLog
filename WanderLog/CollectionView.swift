@@ -66,6 +66,17 @@ struct CollectionView: View {
 
     private var categorySection: some View {
         VStack(spacing: 16) {
+            ForEach(PlaceCategory.allCases.filter { cat in
+                entries.contains { $0.category == cat && $0.customCategoryID == nil }
+            }) { cat in
+                CategoryGroupCard(
+                    category: cat,
+                    entries: entries.filter { $0.category == cat && $0.customCategoryID == nil }
+                ) { entry in
+                    selectedEntry = entry
+                    showDetail = true
+                }
+            }
             ForEach(store.customCategories.filter { customCat in
                 entries.contains { $0.customCategoryID == customCat.id }
             }) { customCat in
@@ -79,7 +90,7 @@ struct CollectionView: View {
                     showDetail = true
                 }
             }
-            if store.customCategories.isEmpty || !entries.contains(where: { $0.customCategoryID != nil }) {
+            if entries.isEmpty {
                 emptyStateView(icon: "📂", message: "还没有打卡记录")
             }
         }

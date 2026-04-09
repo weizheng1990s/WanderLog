@@ -9,7 +9,7 @@ struct MapTabView: View {
         span: MKCoordinateSpan(latitudeDelta: 60, longitudeDelta: 60)
     )
     @State private var selectedEntry: Entry? = nil
-    @State private var selectedCategory: PlaceCategory? = nil
+    @State private var selectedCategory: CategorySelection? = nil
     @State private var showDetail = false
 
     var entries: [Entry] {
@@ -18,8 +18,20 @@ struct MapTabView: View {
 
     var filteredEntries: [Entry] {
         let geoEntries = entries.filter { $0.latitude != nil && $0.longitude != nil }
-        guard let cat = selectedCategory else { return geoEntries }
-        return geoEntries.filter { $0.category == cat }
+        guard let sel = selectedCategory else { return geoEntries }
+        switch sel {
+        case .standard(let cat):
+            return geoEntries.filter { $0.category == cat && $0.customCategoryID == nil }
+        case .custom(let id):
+            let customCat = store.customCategories.first { $0.id == id }
+            return geoEntries.filter { entry in
+                if entry.customCategoryID == id { return true }
+                if entry.customCategoryID == nil, let cat = customCat {
+                    return entry.category.rawValue == cat.name
+                }
+                return false
+            }
+        }
     }
 
     var body: some View {
@@ -53,9 +65,9 @@ struct MapTabView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             CategoryChip(label: lang.s.all, isSelected: selectedCategory == nil) { selectedCategory = nil }
-                            ForEach(PlaceCategory.allCases) { cat in
-                                CategoryChip(icon: cat.icon, label: cat.localizedName(lang: lang.language), isSelected: selectedCategory == cat) {
-                                    selectedCategory = selectedCategory == cat ? nil : cat
+                            ForEach(store.customCategories) { cat in
+                                CategoryChip(icon: cat.icon, label: cat.name, isSelected: selectedCategory == .custom(cat.id)) {
+                                    selectedCategory = selectedCategory == .custom(cat.id) ? nil : .custom(cat.id)
                                 }
                             }
                         }
