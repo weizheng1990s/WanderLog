@@ -238,6 +238,7 @@ struct CountryGroupCard: View {
 
 struct EntryRowItem: View {
     let entry: Entry
+    @EnvironmentObject var store: EntryStore
     @State private var thumbnail: UIImage? = nil
 
     var body: some View {
@@ -258,7 +259,7 @@ struct EntryRowItem: View {
                 Text(entry.name).font(.system(size: 14, weight: .medium))
                     .foregroundColor(.wanderInk).lineLimit(1)
                 HStack(spacing: 8) {
-                    Image(systemName: entry.category.icon).font(.system(size: 10)); Text(entry.city)
+                    Image(systemName: store.categoryIcon(for: entry)).font(.system(size: 10)); Text(entry.city)
                         .font(.system(size: 12)).foregroundColor(.wanderMuted)
                     Text(entry.visitedAt.formatted(date: .abbreviated, time: .omitted))
                         .font(.system(size: 12)).foregroundColor(.wanderMuted)
