@@ -23,11 +23,18 @@ struct ProfileView: View {
     var uniqueCities: [String] {
         Array(Set(entries.map { $0.city }.filter { !$0.isEmpty })).sorted()
     }
-    var categoryBreakdown: [(PlaceCategory, Int)] {
-        PlaceCategory.allCases.compactMap { cat in
-            let count = entries.filter { $0.category == cat }.count
-            return count > 0 ? (cat, count) : nil
-        }.sorted { $0.1 > $1.1 }
+    var categoryBreakdown: [(name: String, icon: String, count: Int)] {
+        var result: [(name: String, icon: String, count: Int)] = []
+        for cat in store.customCategories {
+            let count = entries.filter { $0.customCategoryID == cat.id }.count
+            if count > 0 { result.append((cat.name, cat.icon, count)) }
+        }
+        for cat in PlaceCategory.allCases {
+            let unmapped = entries.filter { $0.customCategoryID == nil }
+            let count = unmapped.filter { $0.category == cat }.count
+            if count > 0 { result.append((cat.rawValue, cat.icon, count)) }
+        }
+        return result.sorted { $0.count > $1.count }
     }
 
     var body: some View {
@@ -156,19 +163,19 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text(lang.s.categoryBreakdown).font(.system(size: 13, weight: .semibold)).tracking(0.5)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
-            ForEach(categoryBreakdown, id: \.0) { (cat, count) in
+            ForEach(categoryBreakdown, id: \.name) { item in
                 VStack(spacing: 6) {
                     HStack {
-                        HStack(spacing:4){Image(systemName:cat.icon).font(.system(size:10));Text(cat.localizedName(lang: lang.language))}.font(.system(size: 14)).foregroundColor(.wanderInk)
+                        HStack(spacing:4){Image(systemName:item.icon).font(.system(size:10));Text(item.name)}.font(.system(size: 14)).foregroundColor(.wanderInk)
                         Spacer()
-                        Text("\(count)").font(.system(size: 13, weight: .medium)).foregroundColor(.wanderMuted)
+                        Text("\(item.count)").font(.system(size: 13, weight: .medium)).foregroundColor(.wanderMuted)
                     }
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             Capsule().fill(Color.wanderBlush).frame(height: 5)
                             Capsule().fill(Color.wanderAccent)
-                                .frame(width: geo.size.width * CGFloat(count) / CGFloat(max(entries.count, 1)), height: 5)
-                                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: count)
+                                .frame(width: geo.size.width * CGFloat(item.count) / CGFloat(max(entries.count, 1)), height: 5)
+                                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: item.count)
                         }
                     }
                     .frame(height: 5)

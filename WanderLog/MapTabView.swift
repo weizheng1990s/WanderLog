@@ -23,14 +23,7 @@ struct MapTabView: View {
         case .standard(let cat):
             return geoEntries.filter { $0.category == cat && $0.customCategoryID == nil }
         case .custom(let id):
-            let customCat = store.customCategories.first { $0.id == id }
-            return geoEntries.filter { entry in
-                if entry.customCategoryID == id { return true }
-                if entry.customCategoryID == nil, let cat = customCat {
-                    return entry.category.rawValue == cat.name
-                }
-                return false
-            }
+            return geoEntries.filter { $0.customCategoryID == id }
         }
     }
 

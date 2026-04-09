@@ -66,17 +66,6 @@ struct CollectionView: View {
 
     private var categorySection: some View {
         VStack(spacing: 16) {
-            ForEach(PlaceCategory.allCases.filter { cat in
-                entries.contains { $0.category == cat && $0.customCategoryID == nil }
-            }) { cat in
-                CategoryGroupCard(
-                    category: cat,
-                    entries: entries.filter { $0.category == cat && $0.customCategoryID == nil }
-                ) { entry in
-                    selectedEntry = entry
-                    showDetail = true
-                }
-            }
             ForEach(store.customCategories.filter { customCat in
                 entries.contains { $0.customCategoryID == customCat.id }
             }) { customCat in
@@ -85,6 +74,17 @@ struct CollectionView: View {
                     categoryDisplayName: customCat.name,
                     categoryIcon: customCat.icon,
                     entries: entries.filter { $0.customCategoryID == customCat.id }
+                ) { entry in
+                    selectedEntry = entry
+                    showDetail = true
+                }
+            }
+            ForEach(PlaceCategory.allCases.filter { cat in
+                entries.contains { $0.customCategoryID == nil && $0.category == cat }
+            }) { cat in
+                CategoryGroupCard(
+                    category: cat,
+                    entries: entries.filter { $0.customCategoryID == nil && $0.category == cat }
                 ) { entry in
                     selectedEntry = entry
                     showDetail = true
