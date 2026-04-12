@@ -27,12 +27,12 @@ struct ProfileView: View {
         var result: [(name: String, icon: String, count: Int)] = []
         for cat in store.customCategories {
             let count = entries.filter { $0.customCategoryID == cat.id }.count
-            if count > 0 { result.append((cat.name, cat.icon, count)) }
+            if count > 0 { result.append((store.displayName(for: cat, lang: lang.language), cat.icon, count)) }
         }
         for cat in PlaceCategory.allCases {
             let unmapped = entries.filter { $0.customCategoryID == nil }
             let count = unmapped.filter { $0.category == cat }.count
-            if count > 0 { result.append((cat.rawValue, cat.icon, count)) }
+            if count > 0 { result.append((cat.localizedName(lang: lang.language), cat.icon, count)) }
         }
         return result.sorted { $0.count > $1.count }
     }

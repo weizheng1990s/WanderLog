@@ -104,7 +104,7 @@ struct HomeView: View {
                 ForEach(store.customCategories) { cat in
                     CategoryChip(
                         icon: cat.icon,
-                        label: cat.name,
+                        label: store.displayName(for: cat, lang: lang.language),
                         isSelected: selectedFilter == .custom(cat.id)
                     ) {
                         selectedFilter = selectedFilter == .custom(cat.id) ? nil : .custom(cat.id)

@@ -150,32 +150,27 @@ struct EntryDetailView: View {
                 .font(.system(size: 11, weight: .semibold)).tracking(1)
                 .foregroundColor(.wanderMuted).textCase(.uppercase)
             if let coord = liveEntry.coordinate {
-                let region = MKCoordinateRegion(
-                    center: coord,
-                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-                )
                 Button { showFullMap = true } label: {
                     ZStack(alignment: .bottomTrailing) {
-                        Map(coordinateRegion: .constant(region),
-                            annotationItems: [liveEntry]) { e in
-                            MapAnnotation(coordinate: coord) {
-                                ZStack {
-                                    Circle().fill(Color.wanderAccent).frame(width: 28, height: 28)
-                                    Image(systemName: store.categoryIcon(for: liveEntry))
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.white)
-                                }
-                            }
-                        }
+                        LocalizedMapView(
+                            region: .constant(MKCoordinateRegion(
+                                center: coord,
+                                span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                            )),
+                            isInteractionEnabled: false,
+                            pins: [MapPinData(id: liveEntry.id, coordinate: coord,
+                                             icon: store.categoryIcon(for: liveEntry),
+                                             name: liveEntry.name)],
+                            selectedID: liveEntry.id
+                        )
                         .frame(height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .allowsHitTesting(false)
 
                         // 右下角提示
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.left.and.arrow.down.right")
                                 .font(.system(size: 10, weight: .medium))
-                            Text("全屏查看")
+                            Text(lang.s.fullscreenView)
                                 .font(.system(size: 11, weight: .medium))
                         }
                         .foregroundColor(.white)

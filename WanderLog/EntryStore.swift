@@ -104,8 +104,18 @@ final class EntryStore: ObservableObject {
     }
 
     func categoryDisplayName(for entry: Entry, lang: AppLanguage) -> String {
-        if let custom = customCategory(for: entry) { return custom.name }
+        if let custom = customCategory(for: entry) {
+            // Default categories (have sourcePlaceCategory) auto-translate
+            if let source = custom.sourcePlaceCategory { return source.localizedName(lang: lang) }
+            // User-created custom categories keep their user-given name
+            return custom.name
+        }
         return entry.category.localizedName(lang: lang)
+    }
+
+    func displayName(for customCat: CustomCategory, lang: AppLanguage) -> String {
+        if let source = customCat.sourcePlaceCategory { return source.localizedName(lang: lang) }
+        return customCat.name
     }
 
     func categoryIcon(for entry: Entry) -> String {

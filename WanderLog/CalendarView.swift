@@ -74,13 +74,19 @@ struct WanderCalendar: View {
             }
             Spacer()
             VStack(spacing: 2) {
-                Text(yearString)
-                    .font(.system(size: 12, weight: .medium))
-                    .tracking(0.5)
-                    .foregroundColor(.wanderMuted)
-                Text(monthString)
-                    .font(.wanderSerif(22))
-                    .foregroundColor(.wanderInk)
+                if lang.language == .english {
+                    Text(yearString)
+                        .font(.system(size: 12, weight: .medium))
+                        .tracking(0.5)
+                        .foregroundColor(.wanderMuted)
+                    Text(monthString)
+                        .font(.wanderSerif(22))
+                        .foregroundColor(.wanderInk)
+                } else {
+                    Text(monthYearString)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.wanderInk)
+                }
             }
             Spacer()
             Button { changeMonth(by: 1) } label: {
@@ -97,7 +103,7 @@ struct WanderCalendar: View {
 
     private var weekdayHeader: some View {
         HStack(spacing: 0) {
-            ForEach(["Su","Mo","Tu","We","Th","Fr","Sa"], id: \.self) { d in
+            ForEach(lang.s.weekdayAbbreviations, id: \.self) { d in
                 Text(d)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.wanderMuted)
@@ -135,11 +141,22 @@ struct WanderCalendar: View {
 
     private var yearString: String {
         let f = DateFormatter(); f.dateFormat = "yyyy"
+        f.locale = lang.s.calendarLocale()
         return f.string(from: monthStart)
     }
 
     private var monthString: String {
         let f = DateFormatter(); f.dateFormat = "MMMM"
+        f.locale = lang.s.calendarLocale()
+        return f.string(from: monthStart)
+    }
+
+    /// CJK 语言：年月合并，自然格式（"2026年4月" / "2026년 4월" / "2026年4月"）
+    private var monthYearString: String {
+        let locale = lang.s.calendarLocale()
+        let f = DateFormatter()
+        f.locale = locale
+        f.setLocalizedDateFormatFromTemplate("yMMMM")
         return f.string(from: monthStart)
     }
 
@@ -275,12 +292,14 @@ struct DayEntriesSheet: View {
     private var dateString: String {
         guard let entry = entries.first else { return "" }
         let f = DateFormatter(); f.dateFormat = "MMMM d"
+        f.locale = lang.s.calendarLocale()
         return f.string(from: entry.visitedAt)
     }
 
     private var weekdayString: String {
         guard let entry = entries.first else { return "" }
         let f = DateFormatter(); f.dateFormat = "EEE"
+        f.locale = lang.s.calendarLocale()
         return f.string(from: entry.visitedAt)
     }
 }

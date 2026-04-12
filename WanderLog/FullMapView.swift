@@ -5,6 +5,7 @@ struct FullMapView: View {
     let entry: Entry
     let categoryIcon: String
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var lang: LanguageManager
 
     @State private var region: MKCoordinateRegion
 
@@ -21,30 +22,14 @@ struct FullMapView: View {
     var body: some View {
         ZStack(alignment: .top) {
             if let coord = entry.coordinate {
-                Map(coordinateRegion: $region,
+                LocalizedMapView(
+                    region: $region,
                     showsUserLocation: true,
-                    annotationItems: [entry]) { e in
-                    MapAnnotation(coordinate: coord) {
-                        VStack(spacing: 4) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.wanderAccent)
-                                    .frame(width: 44, height: 44)
-                                    .shadow(color: .black.opacity(0.25), radius: 6, y: 3)
-                                Image(systemName: categoryIcon)
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(.white)
-                            }
-                            Text(entry.name)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.wanderInk)
-                                .padding(.horizontal, 8).padding(.vertical, 4)
-                                .background(Color.wanderWarm)
-                                .clipShape(Capsule())
-                                .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
-                        }
-                    }
-                }
+                    pins: [MapPinData(id: entry.id, coordinate: coord,
+                                     icon: categoryIcon, name: entry.name)],
+                    selectedID: entry.id
+                )
+                .id(lang.language.rawValue)
                 .ignoresSafeArea()
             }
 

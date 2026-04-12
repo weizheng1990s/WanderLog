@@ -105,7 +105,7 @@ struct AddEntryView: View {
             HStack {
                 sectionLabel(lang.s.photos)
                 if selectedImages.count > 1 {
-                    Text("长按拖拽可排序")
+                    Text(lang.s.dragToSort)
                         .font(.system(size: 11))
                         .foregroundColor(.wanderMuted)
                 }
@@ -187,7 +187,7 @@ struct AddEntryView: View {
         }
         .sheet(isPresented: $showAddCategory) {
             IconPickerSheet(
-                title: "新增类型",
+                title: lang.s.addCategory,
                 name: $newCategoryName,
                 icon: $newCategoryIcon
             ) {
@@ -202,7 +202,7 @@ struct AddEntryView: View {
         }
         .sheet(isPresented: $showEditCategory) {
             IconPickerSheet(
-                title: "编辑类型",
+                title: lang.s.editCategory,
                 name: $newCategoryName,
                 icon: $newCategoryIcon
             ) {
@@ -226,6 +226,7 @@ struct AddEntryView: View {
             ForEach(store.customCategories) { cat in
                 CustomCategoryButton(
                     category: cat,
+                    displayName: store.displayName(for: cat, lang: lang.language),
                     isSelected: categorySelection == .custom(cat.id),
                     onTap: { categorySelection = .custom(cat.id) },
                     onEdit: { editingCustomCategory = cat; newCategoryName = cat.name; newCategoryIcon = cat.icon; showEditCategory = true },
@@ -525,17 +526,19 @@ struct CategoryButton: View {
 
 struct CustomCategoryButton: View {
     let category: CustomCategory
+    let displayName: String
     let isSelected: Bool
     let onTap: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    @EnvironmentObject var lang: LanguageManager
 
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 6) {
                 Image(systemName: category.icon).font(.system(size: 20))
                     .foregroundColor(isSelected ? .white : .wanderAccent)
-                Text(category.name).font(.system(size: 10, weight: .medium))
+                Text(displayName).font(.system(size: 10, weight: .medium))
                     .lineLimit(1).minimumScaleFactor(0.7)
                     .foregroundColor(isSelected ? .white : .wanderInk)
             }
@@ -547,8 +550,8 @@ struct CustomCategoryButton: View {
         }
         .animation(.easeInOut(duration: 0.15), value: isSelected)
         .contextMenu {
-            Button { onEdit() } label: { Label("编辑", systemImage: "pencil") }
-            Button(role: .destructive) { onDelete() } label: { Label("删除", systemImage: "trash") }
+            Button { onEdit() } label: { Label(lang.s.edit, systemImage: "pencil") }
+            Button(role: .destructive) { onDelete() } label: { Label(lang.s.delete, systemImage: "trash") }
         }
     }
 }

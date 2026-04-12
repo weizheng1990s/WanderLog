@@ -7,40 +7,40 @@ struct IconPickerSheet: View {
     let onConfirm: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var lang: LanguageManager
 
-    // 图标库，按主题分组
-    let iconGroups: [(String, [String])] = [
-        ("餐饮", [
+    var iconGroups: [(String, [String])] {[
+        (lang.s.iconGroupFood, [
             "cup.and.saucer.fill", "mug.fill", "wineglass.fill",
             "fork.knife", "cart.fill", "takeoutbag.and.cup.and.straw.fill",
             "birthday.cake.fill", "popcorn.fill"
         ]),
-        ("文化", [
+        (lang.s.iconGroupCulture, [
             "building.columns.fill", "books.vertical.fill", "photo.artframe",
             "music.note", "theatermasks.fill", "film.fill",
             "paintbrush.fill", "guitars.fill"
         ]),
-        ("购物", [
+        (lang.s.iconGroupShopping, [
             "bag.fill", "cart.fill", "handbag.fill",
             "tag.fill", "giftcard.fill", "gift.fill",
             "tshirt.fill", "eyeglasses"
         ]),
-        ("休闲", [
+        (lang.s.iconGroupLeisure, [
             "figure.walk", "bicycle", "sportscourt.fill",
             "beach.umbrella.fill", "tent.fill", "mountain.2.fill",
             "pawprint.fill", "leaf.fill"
         ]),
-        ("场所", [
+        (lang.s.iconGroupPlaces, [
             "mappin.and.ellipse", "house.fill", "building.2.fill",
             "building.fill", "ferry.fill", "airplane",
             "train.side.front.car", "car.fill"
         ]),
-        ("其他", [
+        (lang.s.iconGroupOther, [
             "star.fill", "heart.fill", "sparkles",
             "camera.fill", "photo.fill", "bolt.fill",
             "flame.fill", "crown.fill"
         ]),
-    ]
+    ]}
 
     var body: some View {
         NavigationStack {
@@ -48,11 +48,11 @@ struct IconPickerSheet: View {
                 VStack(spacing: 24) {
                     // 名称输入
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("类型名称")
+                        Text(lang.s.categoryNameLabel)
                             .font(.system(size: 11, weight: .semibold))
                             .tracking(1).foregroundColor(.wanderMuted)
                             .textCase(.uppercase)
-                        TextField("输入类型名称", text: $name)
+                        TextField(lang.s.categoryNamePlaceholder, text: $name)
                             .font(.system(size: 15))
                             .padding(.horizontal, 16).padding(.vertical, 13)
                             .background(Color.white)
@@ -63,7 +63,7 @@ struct IconPickerSheet: View {
 
                     // 预览
                     VStack(spacing: 8) {
-                        Text("预览")
+                        Text(lang.s.preview)
                             .font(.system(size: 11, weight: .semibold))
                             .tracking(1).foregroundColor(.wanderMuted)
                             .textCase(.uppercase)
@@ -74,7 +74,7 @@ struct IconPickerSheet: View {
                                 Image(systemName: icon)
                                     .font(.system(size: 20))
                                     .foregroundColor(.wanderAccent)
-                                Text(name.isEmpty ? "类型名称" : name)
+                                Text(name.isEmpty ? lang.s.categoryNameLabel : name)
                                     .font(.system(size: 10, weight: .medium))
                                     .lineLimit(1).minimumScaleFactor(0.7)
                                     .foregroundColor(.wanderInk)
@@ -90,7 +90,7 @@ struct IconPickerSheet: View {
                                 Image(systemName: icon)
                                     .font(.system(size: 20))
                                     .foregroundColor(.white)
-                                Text(name.isEmpty ? "类型名称" : name)
+                                Text(name.isEmpty ? lang.s.categoryNameLabel : name)
                                     .font(.system(size: 10, weight: .medium))
                                     .lineLimit(1).minimumScaleFactor(0.7)
                                     .foregroundColor(.white)
@@ -103,7 +103,7 @@ struct IconPickerSheet: View {
 
                     // 图标选择
                     VStack(alignment: .leading, spacing: 16) {
-                        Text("选择图标")
+                        Text(lang.s.selectIcon)
                             .font(.system(size: 11, weight: .semibold))
                             .tracking(1).foregroundColor(.wanderMuted)
                             .textCase(.uppercase)
@@ -150,11 +150,11 @@ struct IconPickerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button(lang.s.cancel) { dismiss() }
                         .foregroundColor(.wanderMuted)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("确定") {
+                    Button(lang.s.ok) {
                         onConfirm()
                         dismiss()
                     }

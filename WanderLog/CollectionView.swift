@@ -71,7 +71,7 @@ struct CollectionView: View {
             }) { customCat in
                 CategoryGroupCard(
                     category: .other,
-                    categoryDisplayName: customCat.name,
+                    categoryDisplayName: store.displayName(for: customCat, lang: lang.language),
                     categoryIcon: customCat.icon,
                     entries: entries.filter { $0.customCategoryID == customCat.id }
                 ) { entry in
@@ -91,7 +91,7 @@ struct CollectionView: View {
                 }
             }
             if entries.isEmpty {
-                emptyStateView(icon: "📂", message: "还没有打卡记录")
+                emptyStateView(icon: "📂", message: lang.s.homeNoEntries)
             }
         }
     }

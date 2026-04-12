@@ -27,15 +27,33 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
 class LanguageManager: ObservableObject {
     @Published var language: AppLanguage {
-        didSet { UserDefaults.standard.set(language.rawValue, forKey: "appLanguage") }
+        didSet {
+            UserDefaults.standard.set(language.rawValue, forKey: "appLanguage")
+            Self.syncAppleLanguages(language)
+        }
     }
 
     init() {
         let saved = UserDefaults.standard.string(forKey: "appLanguage") ?? ""
-        language = AppLanguage(rawValue: saved) ?? .simplifiedChinese
+        let lang = AppLanguage(rawValue: saved) ?? .simplifiedChinese
+        language = lang
+        Self.syncAppleLanguages(lang)
     }
 
     var s: Strings { Strings(lang: language) }
+
+    /// 让 MapKit 瓦片语言跟随 app 语言（AppleLanguages 是 MapKit 确定瓦片语言的依据）
+    private static func syncAppleLanguages(_ lang: AppLanguage) {
+        let code: String
+        switch lang {
+        case .simplifiedChinese:  code = "zh-Hans"
+        case .traditionalChinese: code = "zh-Hant"
+        case .english:            code = "en"
+        case .japanese:           code = "ja"
+        case .korean:             code = "ko"
+        }
+        UserDefaults.standard.set([code], forKey: "AppleLanguages")
+    }
 }
 
 // MARK: - Strings
@@ -144,6 +162,48 @@ struct Strings {
     var aboutPrivacy2: String  { pick("完全离线可用", "Works fully offline", "完全オフライン対応", "완전 오프라인 지원", "完全離線可用") }
     var aboutPrivacy3: String  { pick("无账号，无追踪，无广告", "No account, no tracking, no ads", "アカウント不要、追跡なし、広告なし", "계정 없음, 추적 없음, 광고 없음", "無帳號，無追蹤，無廣告") }
     var about: String          { pick("关于",       "About",          "について",         "정보",          "關於") }
+
+    // MARK: Icon Picker / Category Editor
+    var addCategory: String    { pick("新增类型",   "Add Category",   "カテゴリを追加",   "카테고리 추가",  "新增類型") }
+    var editCategory: String   { pick("编辑类型",   "Edit Category",  "カテゴリを編集",   "카테고리 편집",  "編輯類型") }
+    var categoryNameLabel: String { pick("类型名称", "Category Name",  "カテゴリ名",       "카테고리 이름", "類型名稱") }
+    var categoryNamePlaceholder: String { pick("输入类型名称", "Enter category name", "カテゴリ名を入力", "카테고리 이름 입력", "輸入類型名稱") }
+    var preview: String        { pick("预览",       "Preview",        "プレビュー",       "미리보기",       "預覽") }
+    var selectIcon: String     { pick("选择图标",   "Select Icon",    "アイコンを選択",   "아이콘 선택",    "選擇圖示") }
+    var fullscreenView: String  { pick("全屏查看",   "Full Screen",    "全画面",           "전체 화면",      "全螢幕") }
+    var dragToSort: String      { pick("长按拖拽可排序", "Hold to reorder", "長押しで並べ替え", "길게 눌러 정렬", "長按拖曳可排序") }
+
+    // MARK: Icon Group Names
+    var iconGroupFood: String    { pick("餐饮",  "Food & Drink", "飲食",       "식음료",  "餐飲") }
+    var iconGroupCulture: String { pick("文化",  "Culture",      "文化",       "문화",    "文化") }
+    var iconGroupShopping: String { pick("购物", "Shopping",     "ショッピング", "쇼핑",   "購物") }
+    var iconGroupLeisure: String { pick("休闲",  "Leisure",      "レジャー",   "여가",    "休閒") }
+    var iconGroupPlaces: String  { pick("场所",  "Places",       "場所",       "장소",    "場所") }
+    var iconGroupOther: String   { pick("其他",  "Other",        "その他",     "기타",    "其他") }
+
+    // MARK: Calendar
+    var weekdayAbbreviations: [String] {
+        switch lang {
+        case .simplifiedChinese, .traditionalChinese:
+            return ["日","一","二","三","四","五","六"]
+        case .english:
+            return ["Su","Mo","Tu","We","Th","Fr","Sa"]
+        case .japanese:
+            return ["日","月","火","水","木","金","土"]
+        case .korean:
+            return ["일","월","화","수","목","금","토"]
+        }
+    }
+
+    func calendarLocale() -> Locale {
+        switch lang {
+        case .simplifiedChinese:  return Locale(identifier: "zh_Hans")
+        case .traditionalChinese: return Locale(identifier: "zh_Hant")
+        case .english:            return Locale(identifier: "en")
+        case .japanese:           return Locale(identifier: "ja")
+        case .korean:             return Locale(identifier: "ko")
+        }
+    }
 
     // MARK: Helper
     private func pick(_ zh: String, _ en: String, _ ja: String, _ ko: String, _ zht: String) -> String {
