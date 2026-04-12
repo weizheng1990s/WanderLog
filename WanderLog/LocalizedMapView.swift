@@ -106,7 +106,6 @@ final class WanderAnnotation: NSObject, MKAnnotation {
 final class WanderPinView: MKAnnotationView {
     static let reuseID = "WanderPin"
 
-    // Accent color matching wanderAccent (#9B7241 approx)
     private static let accent = UIColor(red: 0.608, green: 0.447, blue: 0.255, alpha: 1)
 
     private let capsule = UIView()
@@ -122,7 +121,6 @@ final class WanderPinView: MKAnnotationView {
     required init?(coder: NSCoder) { fatalError() }
 
     private func buildLayout() {
-        // capsule content
         iconView.contentMode = .scaleAspectFit
         iconView.tintColor = Self.accent
         iconView.setContentHuggingPriority(.required, for: .horizontal)
@@ -192,7 +190,6 @@ final class WanderPinView: MKAnnotationView {
         iconView.tintColor = selected ? .white : Self.accent
         dot.backgroundColor = selected ? Self.accent : .systemBackground
         nameLabel.isHidden = !selected
-        // Resize frame to fit label when selected
         layoutIfNeeded()
         let w = max(40, hStack.systemLayoutSizeFitting(.zero).width + 16 + 16)
         frame.size.width = w

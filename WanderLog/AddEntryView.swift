@@ -190,10 +190,10 @@ struct AddEntryView: View {
                 title: lang.s.addCategory,
                 name: $newCategoryName,
                 icon: $newCategoryIcon
-            ) {
-                let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
+            ) { name, icon in
+                let trimmed = name.trimmingCharacters(in: .whitespaces)
                 if !trimmed.isEmpty {
-                    let cat = store.addCustomCategory(name: trimmed, icon: newCategoryIcon)
+                    let cat = store.addCustomCategory(name: trimmed, icon: icon)
                     categorySelection = .custom(cat.id)
                 }
                 newCategoryName = ""
@@ -205,12 +205,24 @@ struct AddEntryView: View {
                 title: lang.s.editCategory,
                 name: $newCategoryName,
                 icon: $newCategoryIcon
-            ) {
+            ) { name, icon in
                 if var cat = editingCustomCategory {
-                    let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
+                    let trimmed = name.trimmingCharacters(in: .whitespaces)
                     if !trimmed.isEmpty {
-                        cat.name = trimmed
-                        cat.icon = newCategoryIcon
+                        let langKey = lang.language.rawValue
+                        if let source = cat.sourcePlaceCategory {
+                            // 默认品类：仅覆盖当前语言，与默认译名相同则移除（恢复自动翻译）
+                            if trimmed == source.localizedName(lang: lang.language) {
+                                cat.localizedNames.removeValue(forKey: langKey)
+                            } else {
+                                cat.localizedNames[langKey] = trimmed
+                            }
+                        } else {
+                            // 纯自定义品类：只更新当前语言覆盖
+                            // cat.name 保留创建时的原始名，作为无覆盖语言的兜底，不修改
+                            cat.localizedNames[langKey] = trimmed
+                        }
+                        cat.icon = icon
                     }
                     store.updateCustomCategory(cat)
                 }
@@ -229,7 +241,7 @@ struct AddEntryView: View {
                     displayName: store.displayName(for: cat, lang: lang.language),
                     isSelected: categorySelection == .custom(cat.id),
                     onTap: { categorySelection = .custom(cat.id) },
-                    onEdit: { editingCustomCategory = cat; newCategoryName = cat.name; newCategoryIcon = cat.icon; showEditCategory = true },
+                    onEdit: { editingCustomCategory = cat; newCategoryName = store.displayName(for: cat, lang: lang.language); newCategoryIcon = cat.icon; showEditCategory = true },
                     onDelete: {
                         store.deleteCustomCategory(cat)
                         if categorySelection == .custom(cat.id) {

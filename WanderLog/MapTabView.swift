@@ -48,7 +48,6 @@ struct MapTabView: View {
                         showDetail = true
                     }
                 )
-                .id(lang.language.rawValue)
                 .ignoresSafeArea(edges: .all)
 
                 VStack(spacing: 10) {

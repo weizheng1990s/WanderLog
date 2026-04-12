@@ -29,7 +29,6 @@ struct FullMapView: View {
                                      icon: categoryIcon, name: entry.name)],
                     selectedID: entry.id
                 )
-                .id(lang.language.rawValue)
                 .ignoresSafeArea()
             }
 

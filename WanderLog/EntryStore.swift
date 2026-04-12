@@ -6,12 +6,29 @@ struct CustomCategory: Identifiable, Codable, Equatable {
     var name: String
     var icon: String
     var sourcePlaceCategory: PlaceCategory?  // 记录对应的标准品类，改名后仍可关联旧数据
+    /// 各语言的自定义名称覆盖（key = AppLanguage.rawValue）
+    var localizedNames: [String: String] = [:]
+
+    // 必须显式定义，否则有自定义 init(from:) 时 Swift 不合成 CodingKeys
+    private enum CodingKeys: String, CodingKey {
+        case id, name, icon, sourcePlaceCategory, localizedNames
+    }
 
     init(id: UUID = UUID(), name: String, icon: String = "tag.fill", sourcePlaceCategory: PlaceCategory? = nil) {
         self.id = id
         self.name = name
         self.icon = icon
         self.sourcePlaceCategory = sourcePlaceCategory
+    }
+
+    // 兼容旧数据：localizedNames 字段缺失时用空字典，不抛异常
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id                  = try c.decode(UUID.self,    forKey: .id)
+        name                = try c.decode(String.self,  forKey: .name)
+        icon                = try c.decode(String.self,  forKey: .icon)
+        sourcePlaceCategory = try c.decodeIfPresent(PlaceCategory.self,      forKey: .sourcePlaceCategory)
+        localizedNames      = (try? c.decodeIfPresent([String: String].self, forKey: .localizedNames)) ?? [:]
     }
 }
 
@@ -33,8 +50,9 @@ final class EntryStore: ObservableObject {
         load()
         loadCustomCategories()
         seedDefaultCategoriesIfNeeded()
-        migrateCustomCategoriesIfNeeded()  // 给已有自定义品类补上 sourcePlaceCategory
-        migrateEntriesIfNeeded()           // 给旧 entry 补上 customCategoryID
+        migrateCustomCategoriesIfNeeded()   // 给已有自定义品类补上 sourcePlaceCategory
+        cleanupOrphanedCategoryIDs()        // 清除指向已不存在品类的 customCategoryID
+        migrateEntriesIfNeeded()            // 给 customCategoryID 为 nil 的 entry 补上正确 ID
     }
 
     private func seedDefaultCategoriesIfNeeded() {
@@ -74,8 +92,9 @@ final class EntryStore: ObservableObject {
     // MARK: - CustomCategory CRUD
 
     @discardableResult
-    func addCustomCategory(name: String, icon: String = "tag.fill") -> CustomCategory {
-        let cat = CustomCategory(name: name, icon: icon)
+    func addCustomCategory(name: String, icon: String = "tag.fill", localizedNames: [String: String] = [:]) -> CustomCategory {
+        var cat = CustomCategory(name: name, icon: icon)
+        cat.localizedNames = localizedNames
         customCategories.append(cat)
         saveCustomCategories()
         return cat
@@ -114,7 +133,15 @@ final class EntryStore: ObservableObject {
     }
 
     func displayName(for customCat: CustomCategory, lang: AppLanguage) -> String {
-        if let source = customCat.sourcePlaceCategory { return source.localizedName(lang: lang) }
+        // 1. 该语言有用户自定义覆盖 → 优先使用
+        if let override = customCat.localizedNames[lang.rawValue], !override.isEmpty {
+            return override
+        }
+        // 2. 默认品类 → 自动翻译
+        if let source = customCat.sourcePlaceCategory {
+            return source.localizedName(lang: lang)
+        }
+        // 3. 纯自定义品类 → 用存储名
         return customCat.name
     }
 
@@ -144,6 +171,19 @@ final class EntryStore: ObservableObject {
             }
         }
         if changed { saveCustomCategories() }
+    }
+
+    /// 清除指向已不存在品类的 customCategoryID（品类重新 seed 后 UUID 变了时修复）
+    private func cleanupOrphanedCategoryIDs() {
+        let validIDs = Set(customCategories.map { $0.id })
+        var changed = false
+        for i in entries.indices {
+            if let id = entries[i].customCategoryID, !validIDs.contains(id) {
+                entries[i].customCategoryID = nil
+                changed = true
+            }
+        }
+        if changed { save() }
     }
 
     /// 给没有 customCategoryID 的旧 entry 补上对应的自定义品类 ID

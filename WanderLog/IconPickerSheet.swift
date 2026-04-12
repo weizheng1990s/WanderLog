@@ -4,7 +4,7 @@ struct IconPickerSheet: View {
     let title: String
     @Binding var name: String
     @Binding var icon: String
-    let onConfirm: () -> Void
+    let onConfirm: (_ name: String, _ icon: String) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var lang: LanguageManager
@@ -155,7 +155,7 @@ struct IconPickerSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(lang.s.ok) {
-                        onConfirm()
+                        onConfirm(name, icon)
                         dismiss()
                     }
                     .font(.system(size: 14, weight: .semibold))
