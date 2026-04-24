@@ -237,7 +237,6 @@ struct DayEntriesSheet: View {
     @State private var navigateToDetail = false
     @State private var selectedEntry: Entry? = nil
     @Environment(\.scenePhase) private var scenePhase
-  
 
     var body: some View {
         NavigationStack {
@@ -283,7 +282,6 @@ struct DayEntriesSheet: View {
                 }
             }
             .onChange(of: scenePhase) { phase in
-                // 后台回来时保持当前页，不做任何跳转
                 if phase == .active { }
             }
         }

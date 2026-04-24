@@ -19,15 +19,18 @@ final class PhotoRepository {
         )
     }
 
-    func save(_ images: [UIImage]) throws -> [String] {
-        try images.map { image in
+    func save(images: [UIImage], originalData: [Data?]) throws -> [String] {
+        try zip(images, originalData).map { image, rawData in
             let filename = UUID().uuidString + ".jpg"
             let url = photosDirectory.appendingPathComponent(filename)
-            let resized = image.resized(maxDimension: 1200)
-            guard let data = resized.jpegData(compressionQuality: 0.85) else {
-                throw PhotoError.compressionFailed
+            if let rawData {
+                try rawData.write(to: url)
+            } else {
+                guard let data = image.jpegData(compressionQuality: 0.85) else {
+                    throw PhotoError.compressionFailed
+                }
+                try data.write(to: url)
             }
-            try data.write(to: url)
             return filename
         }
     }

@@ -20,10 +20,10 @@ struct EntryDetailView: View {
     }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                photoCarousel.frame(height: 320)
+        VStack(spacing: 0) {
+            photoCarousel.frame(height: 320)
 
+            ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
                     titleSection
                     Divider().foregroundColor(.wanderBlush)
@@ -35,8 +35,8 @@ struct EntryDetailView: View {
                 }
                 .padding(24)
             }
+            .background(Color.wanderWarm)
         }
-        .background(Color.wanderWarm)
         .ignoresSafeArea(edges: .top)
         .navigationBarHidden(true)
         .overlay(alignment: .topLeading) { backButton }
@@ -59,12 +59,16 @@ struct EntryDetailView: View {
             } else {
                 TabView(selection: $selectedPhotoIndex) {
                     ForEach(Array(photos.enumerated()), id: \.offset) { idx, img in
-                        Image(uiImage: img).resizable().scaledToFill().clipped().tag(idx)
+                        Image(uiImage: img)
+                            .resizable().scaledToFill()
+                            .clipped()
+                            .tag(idx)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .always))
             }
             LinearGradient(colors: [.clear, .black.opacity(0.5)], startPoint: .center, endPoint: .bottom)
+                .allowsHitTesting(false)
         }
     }
 

@@ -150,6 +150,7 @@ struct CategoryGroupCard: View {
     let onTap: (Entry) -> Void
     @EnvironmentObject var lang: LanguageManager
     @State private var isExpanded = false
+    @State private var showAll = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -173,16 +174,21 @@ struct CategoryGroupCard: View {
             }
             if isExpanded {
                 Divider().padding(.horizontal, 16)
+                let displayed = showAll ? entries : Array(entries.prefix(5))
                 VStack(spacing: 0) {
-                    ForEach(entries.prefix(5)) { entry in
+                    ForEach(displayed) { entry in
                         Button { onTap(entry) } label: { EntryRowItem(entry: entry) }
-                        if entry.id != entries.prefix(5).last?.id {
+                        if entry.id != displayed.last?.id {
                             Divider().padding(.horizontal, 16)
                         }
                     }
-                    if entries.count > 5 {
-                        Text(lang.s.seeAll(entries.count)).font(.system(size: 13))
-                            .foregroundColor(.wanderAccent).frame(maxWidth: .infinity).padding(14)
+                    if entries.count > 5 && !showAll {
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showAll = true }
+                        } label: {
+                            Text(lang.s.seeAll(entries.count)).font(.system(size: 13))
+                                .foregroundColor(.wanderAccent).frame(maxWidth: .infinity).padding(14)
+                        }
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -198,6 +204,7 @@ struct CountryGroupCard: View {
     let onTap: (Entry) -> Void
     @EnvironmentObject var lang: LanguageManager
     @State private var isExpanded = false
+    @State private var showAll = false
 
     var cities: String {
         Array(Set(entries.map { $0.city }.filter { !$0.isEmpty })).prefix(3).joined(separator: "、")
@@ -223,11 +230,22 @@ struct CountryGroupCard: View {
                 .padding(16)
             }
             if isExpanded {
+                let displayed = showAll ? entries : Array(entries.prefix(5))
                 Divider().padding(.horizontal, 16)
-                ForEach(entries.prefix(5)) { entry in
-                    Button { onTap(entry) } label: { EntryRowItem(entry: entry) }
-                    if entry.id != entries.prefix(5).last?.id {
-                        Divider().padding(.horizontal, 16)
+                VStack(spacing: 0) {
+                    ForEach(displayed) { entry in
+                        Button { onTap(entry) } label: { EntryRowItem(entry: entry) }
+                        if entry.id != displayed.last?.id {
+                            Divider().padding(.horizontal, 16)
+                        }
+                    }
+                    if entries.count > 5 && !showAll {
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { showAll = true }
+                        } label: {
+                            Text(lang.s.seeAll(entries.count)).font(.system(size: 13))
+                                .foregroundColor(.wanderAccent).frame(maxWidth: .infinity).padding(14)
+                        }
                     }
                 }
             }

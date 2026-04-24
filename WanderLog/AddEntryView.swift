@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import CoreLocation
 import MapKit
+import ImageIO
 
 enum CategorySelection: Equatable {
     case standard(PlaceCategory)
@@ -29,6 +30,7 @@ struct AddEntryView: View {
     @State private var visitedAt: Date = Date()
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var selectedImages: [UIImage] = []
+    @State private var selectedPhotoData: [Data?] = []
     @State private var addressInput: String = ""
     @State private var isGeocoding = false
     @State private var resolvedCoordinate: CLLocationCoordinate2D? = nil
@@ -59,7 +61,7 @@ struct AddEntryView: View {
             .background(Color.wanderWarm)
             .navigationTitle(isEditing ? lang.s.editEntry : lang.s.newEntry)
             .navigationBarTitleDisplayMode(.inline)
-            .ignoresSafeArea(.keyboard, edges: .bottom)
+            .scrollDismissesKeyboard(.interactively)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(lang.s.cancel) { dismiss() }.foregroundColor(.wanderMuted)
@@ -139,6 +141,7 @@ struct AddEntryView: View {
             // 删除按钮
             Button {
                 selectedImages.remove(at: index)
+                selectedPhotoData.remove(at: index)
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 18))
@@ -154,6 +157,7 @@ struct AddEntryView: View {
         .onDrop(of: [.text], delegate: PhotoDropDelegate(
             toIndex: index,
             images: $selectedImages,
+            photoData: $selectedPhotoData,
             draggingIndex: $draggingIndex
         ))
     }
@@ -406,11 +410,44 @@ struct AddEntryView: View {
 
     private func loadSelectedPhotos(_ items: [PhotosPickerItem]) async {
         var images: [UIImage] = []
+        var datas: [Data?] = []
+        var firstCoord: CLLocationCoordinate2D? = nil
         for item in items {
             if let data = try? await item.loadTransferable(type: Data.self),
-               let img = UIImage(data: data) { images.append(img) }
+               let img = UIImage(data: data) {
+                images.append(img)
+                datas.append(data)
+                if firstCoord == nil { firstCoord = extractGPSCoordinate(from: data) }
+            }
         }
         selectedImages = images
+        selectedPhotoData = datas
+        if let coord = firstCoord {
+            resolvedCoordinate = coord
+            CLGeocoder().reverseGeocodeLocation(CLLocation(latitude: coord.latitude, longitude: coord.longitude)) { placemarks, _ in
+                DispatchQueue.main.async {
+                    if let p = placemarks?.first {
+                        if let c = p.locality, !c.isEmpty { self.city = c }
+                        if let c = p.country, !c.isEmpty { self.country = c }
+                    }
+                }
+            }
+        }
+    }
+
+    private func extractGPSCoordinate(from data: Data) -> CLLocationCoordinate2D? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any],
+              let gps = props[kCGImagePropertyGPSDictionary as String] as? [String: Any],
+              let lat = gps[kCGImagePropertyGPSLatitude as String] as? Double,
+              let lon = gps[kCGImagePropertyGPSLongitude as String] as? Double
+        else { return nil }
+        let latRef = gps[kCGImagePropertyGPSLatitudeRef as String] as? String ?? "N"
+        let lonRef = gps[kCGImagePropertyGPSLongitudeRef as String] as? String ?? "E"
+        return CLLocationCoordinate2D(
+            latitude: latRef == "S" ? -lat : lat,
+            longitude: lonRef == "W" ? -lon : lon
+        )
     }
 
     private func populateIfEditing() {
@@ -442,6 +479,7 @@ struct AddEntryView: View {
         Task {
             let loaded = await Task.detached { PhotoRepository.shared.loadAll(entry.photoFilenames) }.value
             selectedImages = loaded
+            selectedPhotoData = Array(repeating: nil, count: loaded.count)
         }
     }
 
@@ -449,7 +487,7 @@ struct AddEntryView: View {
         isSaving = true
         defer { isSaving = false }
         do {
-            let newFilenames = try PhotoRepository.shared.save(selectedImages)
+            let newFilenames = try PhotoRepository.shared.save(images: selectedImages, originalData: selectedPhotoData)
             let (cat, customID): (PlaceCategory, UUID?) = {
                 switch categorySelection {
                 case .standard(let c): return (c, nil)
@@ -486,6 +524,7 @@ struct AddEntryView: View {
 struct PhotoDropDelegate: DropDelegate {
     let toIndex: Int
     @Binding var images: [UIImage]
+    @Binding var photoData: [Data?]
     @Binding var draggingIndex: Int?
 
     func performDrop(info: DropInfo) -> Bool {
@@ -495,9 +534,10 @@ struct PhotoDropDelegate: DropDelegate {
 
     func dropEntered(info: DropInfo) {
         guard let from = draggingIndex, from != toIndex else { return }
+        let dest = toIndex > from ? toIndex + 1 : toIndex
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            images.move(fromOffsets: IndexSet(integer: from),
-                        toOffset: toIndex > from ? toIndex + 1 : toIndex)
+            images.move(fromOffsets: IndexSet(integer: from), toOffset: dest)
+            photoData.move(fromOffsets: IndexSet(integer: from), toOffset: dest)
         }
         draggingIndex = toIndex
     }
