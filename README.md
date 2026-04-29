@@ -8,7 +8,7 @@ Email: catz_1201@163.com, marswei20@gmail.com
 
 X (Twitter): https://x.com/marswei666
 
-GitHub Issues: https://github.com/weizheng1990s/WanderLog/issues
+GitHub Issues: https://github.com/marswei666/WanderLog/issues
 
 🔒 Privacy Policy / 隐私政策
 
