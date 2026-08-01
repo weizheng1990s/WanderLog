@@ -9,6 +9,7 @@ struct HomeView: View {
     @EnvironmentObject var store: EntryStore
     @EnvironmentObject var lang: LanguageManager
     @State private var selectedFilter: CategoryFilter? = nil
+    @State private var isLanguageDropdownExpanded = false
     @AppStorage("profile_name") private var profileName: String = ""
     @AppStorage("profile_tagline") private var profileTagline: String = ""
 
@@ -36,35 +37,53 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    headerSection
-                        .padding(.horizontal, 24)
-                        .padding(.top, 20)
-                        .padding(.bottom, 24)
-                        .zIndex(1)
-
-                    statsSection
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 28)
-
-                    categoryFilter
-                        .padding(.bottom, 20)
-
-                    if entries.isEmpty {
-                        emptyState
+            ZStack(alignment: .topTrailing) {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        headerSection
                             .padding(.horizontal, 24)
-                            .padding(.top, 40)
-                    } else {
-                        WanderCalendar(entries: filteredEntries)
-                            .padding(.horizontal, 8)
-                            .padding(.top, 4)
-                    }
+                            .padding(.top, 20)
+                            .padding(.bottom, 24)
 
-                    Spacer(minLength: 100)
+                        statsSection
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 28)
+
+                        categoryFilter
+                            .padding(.bottom, 20)
+
+                        if entries.isEmpty {
+                            emptyState
+                                .padding(.horizontal, 24)
+                                .padding(.top, 40)
+                        } else {
+                            WanderCalendar(entries: filteredEntries)
+                                .padding(.horizontal, 8)
+                                .padding(.top, 4)
+                        }
+
+                        Spacer(minLength: 100)
+                    }
+                }
+                .background(Color.wanderWarm)
+
+                if isLanguageDropdownExpanded {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                isLanguageDropdownExpanded = false
+                            }
+                        }
+
+                    LanguageDropdownMenu(selection: $lang.language, isExpanded: $isLanguageDropdownExpanded)
+                        .padding(.top, 48)
+                        .padding(.trailing, 24)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topTrailing)))
+                        .zIndex(1)
                 }
             }
-            .background(Color.wanderWarm)
         }
     }
 
@@ -76,7 +95,7 @@ struct HomeView: View {
                     .tracking(3)
                     .foregroundColor(.wanderAccent)
                 Spacer()
-                LanguageDropdown(selection: $lang.language)
+                LanguageDropdown(selection: $lang.language, isExpanded: $isLanguageDropdownExpanded)
             }
             Text(profileName.isEmpty ? "Hello" : profileName)
                 .font(.wanderSerif(22))
@@ -179,10 +198,9 @@ struct CategoryChip: View {
 
 struct LanguageDropdown: View {
     @Binding var selection: AppLanguage
-    @State private var isExpanded = false
+    @Binding var isExpanded: Bool
 
     var body: some View {
-        // 触发按钮
         Button {
             withAnimation(.easeInOut(duration: 0.15)) { isExpanded.toggle() }
         } label: {
@@ -195,41 +213,41 @@ struct LanguageDropdown: View {
                     .foregroundColor(.wanderMuted)
             }
         }
-        .overlay(alignment: .topTrailing) {
-            if isExpanded {
-                // 浮层列表，不占布局空间
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(AppLanguage.allCases.enumerated()), id: \.element.id) { idx, lang in
-                        Button {
-                            selection = lang
-                            withAnimation(.easeInOut(duration: 0.15)) { isExpanded = false }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Text(lang.displayName)
-                                    .font(.system(size: 13))
-                                    .foregroundColor(selection == lang ? .wanderAccent : .wanderInk)
-                                if selection == lang {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .foregroundColor(.wanderAccent)
-                                }
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 9)
-                        }
-                        if idx < AppLanguage.allCases.count - 1 {
-                            Divider().padding(.horizontal, 8)
+    }
+}
+
+struct LanguageDropdownMenu: View {
+    @Binding var selection: AppLanguage
+    @Binding var isExpanded: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(AppLanguage.allCases.enumerated()), id: \.element.id) { idx, lang in
+                Button {
+                    selection = lang
+                    withAnimation(.easeInOut(duration: 0.15)) { isExpanded = false }
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(lang.displayName)
+                            .font(.system(size: 13))
+                            .foregroundColor(selection == lang ? .wanderAccent : .wanderInk)
+                        if selection == lang {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(.wanderAccent)
                         }
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
                 }
-                .fixedSize()
-                .background(Color.wanderWarm)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
-                .offset(y: 28)
-                .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topTrailing)))
-                .zIndex(100)
+                if idx < AppLanguage.allCases.count - 1 {
+                    Divider().padding(.horizontal, 8)
+                }
             }
         }
+        .fixedSize()
+        .background(Color.wanderWarm)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
     }
 }

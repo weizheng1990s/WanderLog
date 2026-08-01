@@ -44,6 +44,21 @@ struct AddEntryView: View {
     @ObservedObject private var locationManager = LocationManager.shared
 
     var isEditing: Bool { editingEntry != nil }
+    private var showsFirstCheckInGuide: Bool { !isEditing && store.entries.isEmpty }
+    private var showsPhotoGuide: Bool { showsFirstCheckInGuide && selectedImages.isEmpty }
+    private var showsLocationGuide: Bool {
+        showsFirstCheckInGuide
+        && !selectedImages.isEmpty
+        && (city.trimmingCharacters(in: .whitespaces).isEmpty || country.trimmingCharacters(in: .whitespaces).isEmpty)
+    }
+    private var showsNameGuide: Bool {
+        showsFirstCheckInGuide
+        && !selectedImages.isEmpty
+        && !city.trimmingCharacters(in: .whitespaces).isEmpty
+        && !country.trimmingCharacters(in: .whitespaces).isEmpty
+        && name.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+    private var showsSaveGuide: Bool { showsFirstCheckInGuide && isFormValid }
 
     var body: some View {
         NavigationStack {
@@ -104,6 +119,13 @@ struct AddEntryView: View {
             }
         }
         .disabled(!isFormValid || isSaving)
+        .firstCheckInHighlight(
+            isActive: showsSaveGuide && !isSaving,
+            text: lang.s.firstCheckInSave,
+            cornerRadius: 18,
+            bubbleAlignment: .bottomTrailing,
+            bubbleOffset: CGSize(width: 0, height: 42)
+        )
     }
 
     // MARK: - Photo Section (draggable)
@@ -186,6 +208,12 @@ struct AddEntryView: View {
                 .foregroundColor(.wanderAccent)
             }
         }
+        .firstCheckInHighlight(
+            isActive: showsPhotoGuide,
+            text: lang.s.firstCheckInAddPhoto,
+            bubbleAlignment: .top,
+            bubbleOffset: CGSize(width: 0, height: -54)
+        )
     }
 
     // MARK: - Category
@@ -316,7 +344,14 @@ struct AddEntryView: View {
             }
             VStack(alignment: .leading, spacing: 8) {
                 requiredSectionLabel(lang.s.name)
-                TextField(lang.s.shopNamePlaceholder, text: $name).textFieldStyle(WanderTextFieldStyle())
+                TextField(lang.s.shopNamePlaceholder, text: $name)
+                    .textFieldStyle(WanderTextFieldStyle())
+                    .firstCheckInHighlight(
+                        isActive: showsNameGuide,
+                        text: lang.s.firstCheckInNamePlace,
+                        bubbleAlignment: .topLeading,
+                        bubbleOffset: CGSize(width: 0, height: -52)
+                    )
             }
             if resolvedCoordinate != nil {
                 HStack(spacing: 4) {
@@ -345,6 +380,13 @@ struct AddEntryView: View {
             .foregroundColor(.wanderAccent)
         }
         .disabled(locationManager.isLocating)
+        .firstCheckInHighlight(
+            isActive: showsLocationGuide,
+            text: lang.s.firstCheckInAutoLocate,
+            cornerRadius: 12,
+            bubbleAlignment: .topTrailing,
+            bubbleOffset: CGSize(width: -4, height: -50)
+        )
     }
 
     // MARK: - Rating

@@ -30,6 +30,7 @@ struct RootView: View {
 
             CustomTabBar(
                 selectedTab: $selectedTab,
+                showFirstCheckInHint: store.entries.isEmpty,
                 onAdd: {
                     Task {
                         await subscription.refreshEntitlements()
@@ -67,8 +68,10 @@ struct RootView: View {
 
 struct CustomTabBar: View {
     @Binding var selectedTab: RootView.Tab
+    let showFirstCheckInHint: Bool
     let onAdd: () -> Void
     @EnvironmentObject var lang: LanguageManager
+    @State private var isHintPulsing = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -87,6 +90,21 @@ struct CustomTabBar: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.wanderCream)
                 }
+                .overlay {
+                    if showFirstCheckInHint {
+                        Circle()
+                            .stroke(Color.wanderAccent.opacity(isHintPulsing ? 0 : 0.75), lineWidth: 2)
+                            .frame(width: 68, height: 68)
+                            .scaleEffect(isHintPulsing ? 1.35 : 0.85)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .overlay(alignment: .top) {
+                    if showFirstCheckInHint {
+                        FirstCheckInHintBubble(text: lang.s.firstCheckInStart)
+                            .offset(y: -58)
+                    }
+                }
             }
             .offset(y: -12)
             .frame(maxWidth: .infinity)
@@ -102,6 +120,11 @@ struct CustomTabBar: View {
                 .fill(.ultraThinMaterial)
                 .shadow(color: .black.opacity(0.08), radius: 12, y: -4)
                 .ignoresSafeArea()
+        )
+        .onAppear { isHintPulsing = true }
+        .animation(
+            showFirstCheckInHint ? .easeInOut(duration: 1.15).repeatForever(autoreverses: false) : .default,
+            value: isHintPulsing
         )
     }
 }
@@ -129,5 +152,92 @@ struct TabBarItem: View {
             .frame(maxWidth: .infinity)
         }
         .animation(.easeInOut(duration: 0.15), value: isSelected)
+    }
+}
+
+struct FirstCheckInHintBubble: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.wanderAccent)
+            Text(text)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.wanderInk)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .multilineTextAlignment(.leading)
+                .layoutPriority(1)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .frame(width: 188, alignment: .leading)
+        .background(Color.white.opacity(0.97))
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(Color.wanderAccent.opacity(0.35), lineWidth: 1))
+        .shadow(color: .black.opacity(0.10), radius: 10, y: 4)
+        .fixedSize(horizontal: true, vertical: false)
+            .allowsHitTesting(false)
+    }
+}
+
+struct FirstCheckInHighlight: ViewModifier {
+    let isActive: Bool
+    let text: String
+    let cornerRadius: CGFloat
+    let bubbleAlignment: Alignment
+    let bubbleOffset: CGSize
+    @State private var isPulsing = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                if isActive {
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .fill(Color.clear)
+                        .shadow(color: Color.wanderAccent.opacity(isPulsing ? 0.36 : 0.12), radius: isPulsing ? 10 : 4)
+                        .allowsHitTesting(false)
+                }
+            }
+            .overlay(alignment: bubbleAlignment) {
+                if isActive {
+                    FirstCheckInHintBubble(text: text)
+                        .offset(bubbleOffset)
+                }
+            }
+            .onAppear { isPulsing = true }
+            .onChange(of: isActive) { active in
+                guard active else { return }
+                isPulsing = false
+                DispatchQueue.main.async {
+                    isPulsing = true
+                }
+            }
+            .animation(
+                isActive ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default,
+                value: isPulsing
+            )
+    }
+}
+
+extension View {
+    func firstCheckInHighlight(
+        isActive: Bool,
+        text: String,
+        cornerRadius: CGFloat = 14,
+        bubbleAlignment: Alignment = .top,
+        bubbleOffset: CGSize = CGSize(width: 0, height: -48)
+    ) -> some View {
+        modifier(
+            FirstCheckInHighlight(
+                isActive: isActive,
+                text: text,
+                cornerRadius: cornerRadius,
+                bubbleAlignment: bubbleAlignment,
+                bubbleOffset: bubbleOffset
+            )
+        )
     }
 }

@@ -111,6 +111,11 @@ struct Strings {
     var homeCheckIns: String   { pick("打卡",    "Check-ins",   "チェックイン",      "체크인",         "打卡", "Registros", "Visites", "تسجيلات") }
     var homeNoEntries: String  { pick("还没有打卡记录", "No entries yet", "まだ記録なし", "기록이 없습니다", "尚無打卡記錄", "Aún no hay entradas", "Aucune entrée pour le moment", "لا توجد إدخالات بعد") }
     var homeNoEntriesHint: String { pick("点击下方 + 开始记录你的第一个探店", "Tap + below to log your first spot", "下の + をタップして最初のスポットを記録", "아래 + 버튼으로 첫 기록을 시작해보세요", "點擊下方 + 開始記錄第一個探店", "Toca + abajo para registrar tu primer lugar", "Touchez + ci-dessous pour enregistrer votre premier lieu", "اضغط + في الأسفل لتسجيل أول مكان") }
+    var firstCheckInStart: String { pick("从这里开始第一条打卡", "Start your first check-in here", "ここから最初の記録を始めましょう", "여기서 첫 기록을 시작하세요", "從這裡開始第一條打卡", "Empieza tu primer registro aquí", "Commencez votre première entrée ici", "ابدأ أول تسجيل من هنا") }
+    var firstCheckInAddPhoto: String { pick("先添加一张照片", "Add a photo first", "まず写真を追加", "먼저 사진을 추가하세요", "先新增一張照片", "Añade una foto primero", "Ajoutez d'abord une photo", "أضف صورة أولًا") }
+    var firstCheckInAutoLocate: String { pick("用自动定位填写城市和国家", "Use auto-locate for city and country", "自動定位で都市と国を入力", "자동 위치로 도시와 국가를 채우세요", "用自動定位填寫城市和國家", "Usa ubicación automática para ciudad y país", "Utilisez la localisation pour la ville et le pays", "استخدم التحديد التلقائي للمدينة والبلد") }
+    var firstCheckInNamePlace: String { pick("给这个地方起个名字", "Name this place", "この場所に名前を付けましょう", "이 장소의 이름을 입력하세요", "給這個地方起個名字", "Ponle nombre a este lugar", "Nommez ce lieu", "سم هذا المكان") }
+    var firstCheckInSave: String { pick("保存第一条打卡", "Save your first check-in", "最初の記録を保存", "첫 기록 저장", "儲存第一條打卡", "Guarda tu primer registro", "Enregistrez votre première entrée", "احفظ أول تسجيل") }
 
     // MARK: Add Entry
     var newEntry: String       { pick("新建打卡",  "New Entry",      "新規記録",         "새 기록",       "新建打卡", "Nueva entrada", "Nouvelle entrée", "إدخال جديد") }
@@ -214,6 +219,7 @@ struct Strings {
     var aboutPrivacy1: String  { pick("所有数据仅保存在你的设备", "All data stays on your device", "すべてのデータはデバイスに保存", "모든 데이터는 기기에 저장", "所有數據僅保存在你的裝置", "Todos los datos permanecen en tu dispositivo", "Toutes les données restent sur votre appareil", "تبقى كل البيانات على جهازك") }
     var aboutPrivacy2: String  { pick("非打卡定位时，完全离线可用", "Fully offline except when locating check-ins", "チェックイン位置情報の取得時以外は完全オフライン対応", "체크인 위치 확인 시를 제외하고 완전 오프라인 지원", "非打卡定位時，完全離線可用", "Funciona sin conexión salvo al ubicar registros", "Fonctionne hors ligne sauf pour localiser les entrées", "يعمل دون اتصال إلا عند تحديد مواقع الإدخالات") }
     var aboutPrivacy3: String  { pick("无账号，无追踪，无广告", "No account, no tracking, no ads", "アカウント不要、追跡なし、広告なし", "계정 없음, 추적 없음, 광고 없음", "無帳號，無追蹤，無廣告", "Sin cuenta, sin seguimiento, sin anuncios", "Sans compte, sans suivi, sans publicité", "بدون حساب أو تتبع أو إعلانات") }
+    var creatorStory: String   { pick("创作者故事", "Creator Story", "クリエイターのストーリー", "크리에이터 스토리", "創作者故事", "Historia del creador", "Histoire du créateur", "قصة المصمم") }
     var about: String          { pick("关于",       "About",          "について",         "정보",          "關於", "Acerca de", "À propos", "حول") }
 
     // MARK: Icon Picker / Category Editor

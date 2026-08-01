@@ -49,7 +49,9 @@ struct ProfileView: View {
                     if !uniqueCountries.isEmpty { countriesCard }
                     storageCard
                     actionsCard
-                    SubscriptionManagementCard(currentEntryCount: entries.count)
+                    if subscription.state.isPaid {
+                        SubscriptionManagementCard(currentEntryCount: entries.count)
+                    }
                     Spacer(minLength: 100)
                 }
                 .padding(.horizontal, 20)
@@ -416,6 +418,8 @@ struct ShareSheet: UIViewControllerRepresentable {
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var lang: LanguageManager
+    private let creatorStoryURL = URL(string: "https://www.marswei666.com")!
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
@@ -432,6 +436,28 @@ struct AboutView: View {
                     AboutRow(icon: "person.slash.fill", text: lang.s.aboutPrivacy3)
                 }
                 .padding(.horizontal, 32)
+                Divider().padding(.horizontal, 40)
+                Link(destination: creatorStoryURL) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "sparkles")
+                            .foregroundColor(.wanderAccent)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(lang.s.creatorStory)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.wanderInk)
+                            Text("https://www.marswei666.com")
+                                .font(.system(size: 12))
+                                .foregroundColor(.wanderAccent)
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.wanderMuted)
+                    }
+                    .padding(.horizontal, 32)
+                }
+                .tint(.wanderAccent)
                 Spacer()
             }
             .background(Color.wanderWarm)
